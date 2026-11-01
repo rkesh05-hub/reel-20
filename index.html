@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Reel Twenty</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column read top-down (header, meter, board); the guess bar is pinned to the bottom edge where the thumb lives. */
+:root {
+  --paper: #ECEFEA; --card: #F8F9F6; --ink: #18201C; --mute: #56625B;
+  --line: #CBD3CD; --edge: #7A867F;
+  --accent: #8A5300; --on-accent: #FFFFFF; --accent-soft: #F1E1C2;
+  --good: #23683F; --good-soft: #D9EADF; --bad: #A61F33; --gone: #9AA49E;
+  --display: "Big Shoulders Display", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "Libre Franklin", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --t-xs: 12px; --t-s: 13px; --t-m: 16px; --t-l: 22px; --t-xl: 30px;
+  --sp1: 4px; --sp2: 8px; --sp3: 12px; --sp4: 16px; --sp5: 24px;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111613; --card: #1A211D; --ink: #E7ECE7; --mute: #98A49D; --line: #2D3631; --edge: #6B7770;
+    --accent: #E9A440; --on-accent: #1A1206; --accent-soft: #3A2C16;
+    --good: #62C28A; --good-soft: #1D3326; --bad: #F0707F; --gone: #4A544E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111613; --card: #1A211D; --ink: #E7ECE7; --mute: #98A49D; --line: #2D3631; --edge: #6B7770;
+  --accent: #E9A440; --on-accent: #1A1206; --accent-soft: #3A2C16;
+  --good: #62C28A; --good-soft: #1D3326; --bad: #F0707F; --gone: #4A544E; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font: 400 var(--t-m)/1.45 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: var(--sp4) calc(150px + env(safe-area-inset-bottom, 0px));
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--sp4); }
+
+header.top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp3); }
+.brand { font: 800 var(--t-l)/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; margin: 0; }
+.brand span { color: var(--accent); }
+.listbtn {
+  min-height: 44px; padding: 0 var(--sp3); border: 1px solid var(--edge); border-radius: var(--r); background: transparent;
+  font: 600 var(--t-s) var(--body); display: inline-flex; align-items: center; gap: var(--sp2); cursor: pointer;
+}
+.listbtn svg { width: 14px; height: 14px; }
+
+.listhead { display: flex; flex-direction: column; gap: var(--sp2); }
+.kicker { font: 500 var(--t-xs) var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
+.listhead h2 { font: 800 var(--t-xl)/1.02 var(--display); margin: 0; text-transform: uppercase; text-wrap: balance; }
+.meter { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.meter i { height: 8px; border-radius: 2px; background: var(--line); }
+.meter i.g { background: var(--good); } .meter i.h { background: repeating-linear-gradient(135deg, var(--good) 0 2px, var(--line) 2px 4px); } .meter i.x { background: var(--gone); }
+.meter i.pop { animation: pop .55s cubic-bezier(.2,.9,.3,1.4); }
+@keyframes pop { 0% { transform: scaleY(1); } 40% { transform: scaleY(2.2); } 100% { transform: scaleY(1); } }
+.line { display: flex; justify-content: space-between; gap: var(--sp3); font: 600 var(--t-s) var(--body); font-variant-numeric: tabular-nums; }
+.line .pts { color: var(--ink); display: inline-block; }
+.line .pts.bump { animation: bump .5s ease-out; }
+@keyframes bump { 30% { transform: scale(1.25); color: var(--good); } }
+.legend { margin: 0; font-size: var(--t-s); color: var(--mute); }
+
+ol.board { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.row { border-bottom: 1px solid var(--line); }
+.slot {
+  width: 100%; min-height: 56px; display: grid; grid-template-columns: 36px 1fr auto 20px; align-items: center; gap: var(--sp3);
+  background: none; border: 0; text-align: left; padding: var(--sp2) 0; cursor: pointer;
+}
+.rank { font: 800 var(--t-l)/1 var(--display); color: var(--mute); font-variant-numeric: tabular-nums; }
+.mid { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.blank { height: 10px; border-radius: 3px; background: var(--line); width: 64%; }
+.ttl { font: 700 var(--t-l)/1.05 var(--display); text-transform: uppercase; letter-spacing: 0.01em; overflow-wrap: anywhere; }
+.ttl em { font: 500 var(--t-xs) var(--mono); font-style: normal; color: var(--mute); margin-left: var(--sp1); vertical-align: 2px; }
+.peek { font-size: var(--t-s); color: var(--mute); overflow-wrap: anywhere; }
+.badge { font: 500 var(--t-xs) var(--mono); color: var(--mute); white-space: nowrap; }
+.chev { width: 20px; height: 20px; color: var(--edge); transition: transform .2s; }
+.slot[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.row.solved .chev, .row.lost .chev { visibility: hidden; }
+.row.solved .rank { color: var(--good); }
+.row.lost .rank, .row.lost .ttl { color: var(--mute); }
+.row.flash { animation: flash 1.4s ease-out; }
+@keyframes flash { 0% { background: var(--good-soft); } 100% { background: transparent; } }
+.row.flash .ttl { animation: rise .45s cubic-bezier(.2,.9,.3,1.3); }
+@keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.drawer { padding: 0 0 var(--sp4) 48px; display: flex; flex-direction: column; gap: var(--sp3); }
+.hints { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: var(--sp2); }
+.hint {
+  min-height: 48px; border: 1px solid var(--edge); background: transparent; border-radius: var(--r);
+  padding: var(--sp2) var(--sp3); text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0;
+}
+.hint small { font: 600 var(--t-xs) var(--body); letter-spacing: 0.04em; text-transform: uppercase; color: var(--mute); }
+.hint.locked small { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.dnote { margin: 0; font-size: var(--t-xs); color: var(--mute); }
+.hint b { font: 600 var(--t-s) var(--body); overflow-wrap: anywhere; }
+.hint b { color: var(--mute); font-weight: 500; }
+.hint.open { border: 1.5px solid var(--ink); background: var(--card); cursor: default; }
+.hint.open b { color: var(--ink); font-weight: 600; }
+.hint.locked { border-style: dashed; cursor: not-allowed; color: var(--mute); }
+.textbtn { align-self: flex-start; min-height: 44px; background: none; border: 0; padding: 0; font: 600 var(--t-s) var(--body); color: var(--mute); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+.result { border: 1px solid var(--edge); border-radius: var(--r); background: var(--card); padding: var(--sp4); display: flex; flex-direction: column; gap: var(--sp3); }
+.result:not([hidden]) { animation: rise .5s ease-out; }
+.result h3 { margin: 0; font: 800 var(--t-xl)/1 var(--display); text-transform: uppercase; }
+.result p { margin: 0; color: var(--mute); font-size: var(--t-s); }
+.grid { font-size: 20px; line-height: 1.15; letter-spacing: 1px; }
+.acts { display: flex; gap: var(--sp2); flex-wrap: wrap; }
+.btn { min-height: 48px; padding: 0 var(--sp4); border-radius: var(--r); border: 0; background: var(--accent); color: var(--on-accent); font: 600 var(--t-m) var(--body); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--edge); }
+.result textarea { width: 100%; font: var(--t-s)/1.4 var(--mono); background: var(--paper); color: var(--ink); border: 1px solid var(--edge); border-radius: var(--r); padding: var(--sp2); resize: none; }
+
+footer.foot { display: flex; flex-direction: column; gap: var(--sp2); }
+.actions { display: flex; gap: var(--sp4); flex-wrap: wrap; }
+.actions .armed { color: var(--bad); }
+.note { font-size: var(--t-xs); color: var(--mute); margin: 0; }
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--paper); border-top: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: var(--sp2); padding-bottom: calc(var(--sp3) + env(safe-area-inset-bottom, 0px));
+}
+.bar .in { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--sp1); }
+.fb { min-height: 20px; font-size: var(--t-s); font-weight: 600; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb.ok { color: var(--good); } .fb.no { color: var(--bad); } .fb.meh { color: var(--mute); }
+.bar form { display: flex; gap: var(--sp2); }
+.bar input {
+  flex: 1; min-width: 0; height: 48px; font: 500 var(--t-m) var(--body); color: var(--ink); background: var(--card);
+  border: 1px solid var(--edge); border-radius: var(--r); padding: 0 var(--sp3);
+}
+.bar input::placeholder { color: var(--mute); }
+.tried { margin: 0; font-size: var(--t-xs); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tried s { color: var(--bad); text-decoration-thickness: 1px; }
+.shake { animation: shake .32s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
+
+.scrim { position: fixed; inset: 0; z-index: 40; background: rgba(10, 14, 12, 0.45); display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  width: 100%; max-width: 640px; max-height: 86%; overflow: auto; background: var(--paper); border-radius: 16px 16px 0 0;
+  padding: var(--sp4) max(16px, env(safe-area-inset-right, 0px)) calc(var(--sp5) + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: var(--sp4);
+}
+.sheet-head { display: flex; justify-content: space-between; align-items: center; }
+.sheet-head h2 { margin: 0; font: 800 var(--t-l) var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
+.iconbtn { width: 44px; height: 44px; margin-right: -10px; display: grid; place-items: center; background: none; border: 0; border-radius: var(--r); cursor: pointer; color: var(--ink); }
+.iconbtn svg { width: 20px; height: 20px; }
+.todaycard { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: var(--sp3); padding: var(--sp3) var(--sp4); border: 1.5px solid var(--ink); border-radius: var(--r); background: var(--card); text-align: left; cursor: pointer; }
+.todaycard small { display: block; font: 600 var(--t-xs) var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.todaycard b { display: block; font: 800 var(--t-xl)/1 var(--display); text-transform: uppercase; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; background: var(--line); border-radius: var(--r); }
+.seg button { min-height: 44px; border: 0; border-radius: 8px; background: transparent; font: 600 var(--t-s) var(--body); color: var(--mute); cursor: pointer; }
+.seg button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.14); }
+.seg button span { font-weight: 500; opacity: .7; margin-left: 2px; }
+.opts { list-style: none; margin: 0; padding: 0; }
+.opt {
+  width: 100%; min-height: 56px; display: grid; grid-template-columns: 1fr 100px; align-items: center; gap: var(--sp3);
+  background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0; text-align: left; cursor: pointer; font: 500 var(--t-m) var(--body);
+}
+.opt[aria-current="true"] { font-weight: 700; }
+.opt[aria-current="true"]::after { content: "Playing"; grid-column: 1; grid-row: 2; margin-top: -10px; padding-bottom: 8px; font: 600 var(--t-xs) var(--body); color: var(--accent); }
+.mm { display: grid; grid-template-columns: repeat(20, 1fr); gap: 1.5px; }
+.mm i { height: 8px; border-radius: 1px; background: var(--line); }
+.mm i.g { background: var(--good); } .mm i.h { background: repeating-linear-gradient(135deg, var(--good) 0 2px, var(--line) 2px 4px); } .mm i.x { background: var(--gone); }
+.opt .badge { justify-self: end; }
+
+@media (max-width: 420px) { .drawer { padding-left: 0; } .hints { grid-template-columns: 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { .shake, .row.flash, .row.flash .ttl, .chev, .meter i.pop, .line .pts.bump, .result { animation: none !important; transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1 class="brand">Reel <span>Twenty</span></h1>
+    <button class="listbtn" id="openLists" type="button" aria-haspopup="dialog">Lists
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg></button>
+  </header>
+
+  <section class="listhead">
+    <div class="kicker" id="kick"></div>
+    <h2 id="lt"></h2>
+    <div class="meter" id="meter" role="img"></div>
+    <div class="line"><span id="sFound">0 of 20 found</span><span class="pts" id="sScore">0 pts</span></div>
+  </section>
+
+  <section class="result" id="result" hidden></section>
+
+  <ol class="board" id="board"></ol>
+
+  <footer class="foot">
+    <div class="actions">
+      <button class="textbtn" id="giveAll" type="button">Reveal the rest</button>
+      <button class="textbtn" id="reset" type="button">Restart list</button>
+    </div>
+    <p class="note">Ranked by Letterboxd average, best first. Lists, billing and ratings are hand-compiled approximations.</p>
+  </footer>
+</div>
+
+<div class="bar" id="bar">
+  <div class="in">
+    <p class="fb meh" id="fb" aria-live="polite"></p>
+    <form id="gform" autocomplete="off">
+      <input id="gin" type="text" placeholder="Film title" aria-label="Guess a film" spellcheck="false" autocapitalize="off" enterkeyhint="go">
+      <button class="btn" type="submit">Guess</button>
+    </form>
+    <p class="tried" id="tried" hidden></p>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head"><h2 id="sheetTitle">Lists</h2><button class="iconbtn" id="closeLists" type="button" aria-label="Close lists"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg></button></div>
+    <div id="groups"></div>
+  </div>
+</div>
+
+<script>
+// Title|Year|Rating|Genre|Director|Cast1;Cast2;Cast3|Country|aliases
+const RAW = [
+["theater","Theater scenes","Movies with a scene in a movie theater",`
+Cinema Paradiso|1988|4.3|Drama, Romance|Giuseppe Tornatore|Philippe Noiret;Jacques Perrin;Salvatore Cascio|Italy, France|nuovo cinema paradiso
+Sherlock Jr.|1924|4.3|Comedy, Action|Buster Keaton|Buster Keaton;Kathryn McGuire;Joe Keaton|USA|sherlock junior
+Inglourious Basterds|2009|4.3|War, Drama|Quentin Tarantino|Brad Pitt;Christoph Waltz;Mélanie Laurent|USA, Germany|inglorious basterds;inglourious bastards;inglorious bastards
+Taxi Driver|1976|4.2|Crime, Drama|Martin Scorsese|Robert De Niro;Cybill Shepherd;Jodie Foster|USA|
+Mulholland Drive|2001|4.2|Mystery, Thriller|David Lynch|Naomi Watts;Laura Harring;Justin Theroux|USA, France|mulholland dr
+Vivre sa vie|1962|4.1|Drama|Jean-Luc Godard|Anna Karina;Sady Rebbot;André S. Labarthe|France|my life to live
+Sullivan's Travels|1941|4.1|Comedy, Drama|Preston Sturges|Joel McCrea;Veronica Lake;Robert Warwick|USA|
+The Holdovers|2023|4.0|Comedy, Drama|Alexander Payne|Paul Giamatti;Da'Vine Joy Randolph;Dominic Sessa|USA|
+The Last Picture Show|1971|4.0|Drama|Peter Bogdanovich|Timothy Bottoms;Jeff Bridges;Cybill Shepherd|USA|
+The Green Mile|1999|4.0|Drama, Fantasy|Frank Darabont|Tom Hanks;David Morse;Michael Clarke Duncan|USA|
+Goodbye, Dragon Inn|2003|3.9|Drama|Tsai Ming-liang|Lee Kang-sheng;Chen Shiang-chyi;Kiyonobu Mitamura|Taiwan|bu san
+Once Upon a Time in Hollywood|2019|3.9|Comedy, Drama|Quentin Tarantino|Leonardo DiCaprio;Brad Pitt;Margot Robbie|USA, UK|ouatih
+The Purple Rose of Cairo|1985|3.9|Comedy, Fantasy|Woody Allen|Mia Farrow;Jeff Daniels;Danny Aiello|USA|
+The Fabelmans|2022|3.8|Drama|Steven Spielberg|Michelle Williams;Paul Dano;Seth Rogen|USA|
+Hugo|2011|3.6|Adventure, Family|Martin Scorsese|Ben Kingsley;Sacha Baron Cohen;Asa Butterfield|USA|
+Babylon|2022|3.6|Drama, Comedy|Damien Chazelle|Brad Pitt;Margot Robbie;Diego Calva|USA|
+Matinee|1993|3.6|Comedy|Joe Dante|John Goodman;Cathy Moriarty;Simon Fenton|USA|
+Gremlins|1984|3.5|Horror, Comedy|Joe Dante|Zach Galligan;Phoebe Cates;Hoyt Axton|USA|
+Scream 2|1997|3.3|Horror, Mystery|Wes Craven|David Arquette;Neve Campbell;Courteney Cox|USA|
+The Dreamers|2003|3.3|Drama, Romance|Bernardo Bertolucci|Michael Pitt;Eva Green;Louis Garrel|UK, France, Italy|`],
+["one-night","One day or night","Movies that take place in a single day or night",`
+Before Sunrise|1995|4.2|Romance, Drama|Richard Linklater|Ethan Hawke;Julie Delpy;Andrea Eckert|USA, Austria|
+After Hours|1985|4.0|Comedy, Thriller|Martin Scorsese|Griffin Dunne;Rosanna Arquette;Verna Bloom|USA|
+Night on Earth|1991|4.0|Comedy, Drama|Jim Jarmusch|Winona Ryder;Gena Rowlands;Giancarlo Esposito|USA, France, Germany|
+Die Hard|1988|3.9|Action, Thriller|John McTiernan|Bruce Willis;Alan Rickman;Bonnie Bedelia|USA|
+Dazed and Confused|1993|3.9|Comedy|Richard Linklater|Jason London;Wiley Wiggins;Rory Cochrane|USA|
+Collateral|2004|3.8|Crime, Thriller|Michael Mann|Tom Cruise;Jamie Foxx;Jada Pinkett Smith|USA|
+Victoria|2015|3.8|Crime, Thriller|Sebastian Schipper|Laia Costa;Frederick Lau;Franz Rogowski|Germany|
+Good Time|2017|3.8|Crime, Thriller|Josh & Benny Safdie|Robert Pattinson;Benny Safdie;Taliah Webster|USA|
+Night of the Living Dead|1968|3.8|Horror|George A. Romero|Duane Jones;Judith O'Dea;Karl Hardman|USA|
+American Graffiti|1973|3.7|Comedy, Drama|George Lucas|Richard Dreyfuss;Ron Howard;Paul Le Mat|USA|
+Tangerine|2015|3.7|Comedy, Drama|Sean Baker|Kitana Kiki Rodriguez;Mya Taylor;Karren Karagulian|USA|
+The Warriors|1979|3.7|Action, Crime|Walter Hill|Michael Beck;James Remar;Dorsey Wright|USA|
+Superbad|2007|3.7|Comedy|Greg Mottola|Jonah Hill;Michael Cera;Christopher Mintz-Plasse|USA|
+Locke|2013|3.6|Drama|Steven Knight|Tom Hardy;Olivia Colman;Ruth Wilson|UK, USA|
+Booksmart|2019|3.6|Comedy|Olivia Wilde|Kaitlyn Dever;Beanie Feldstein;Jessica Williams|USA|
+Green Room|2015|3.6|Horror, Thriller|Jeremy Saulnier|Anton Yelchin;Imogen Poots;Alia Shawkat|USA|
+Ready or Not|2019|3.6|Horror, Comedy|Matt Bettinelli-Olpin & Tyler Gillett|Samara Weaving;Adam Brody;Mark O'Brien|USA|
+Adventures in Babysitting|1987|3.4|Comedy, Adventure|Chris Columbus|Elisabeth Shue;Maia Brewton;Keith Coogan|USA|
+Bodies Bodies Bodies|2022|3.3|Horror, Comedy|Halina Reijn|Amandla Stenberg;Maria Bakalova;Myha'la|USA|
+Harold & Kumar Go to White Castle|2004|3.2|Comedy|Danny Leiner|John Cho;Kal Penn;Paula Garcés|USA, Canada|harold and kumar;harold kumar`],
+["heists","Heists","The best heist movies",`
+Heat|1995|4.3|Crime, Thriller|Michael Mann|Al Pacino;Robert De Niro;Val Kilmer|USA|
+Le Cercle Rouge|1970|4.2|Crime, Thriller|Jean-Pierre Melville|Alain Delon;Bourvil;Gian Maria Volonté|France, Italy|the red circle;cercle rouge
+Dog Day Afternoon|1975|4.2|Crime, Drama|Sidney Lumet|Al Pacino;John Cazale;Charles Durning|USA|
+Rififi|1955|4.2|Crime, Thriller|Jules Dassin|Jean Servais;Carl Möhner;Robert Manuel|France|du rififi chez les hommes
+Inception|2010|4.2|Sci-Fi, Action|Christopher Nolan|Leonardo DiCaprio;Joseph Gordon-Levitt;Elliot Page|UK, USA|
+Reservoir Dogs|1992|4.0|Crime, Thriller|Quentin Tarantino|Harvey Keitel;Tim Roth;Michael Madsen|USA|
+The Killing|1956|4.0|Crime, Film Noir|Stanley Kubrick|Sterling Hayden;Coleen Gray;Vince Edwards|USA|
+The Asphalt Jungle|1950|3.9|Crime, Film Noir|John Huston|Sterling Hayden;Louis Calhern;Jean Hagen|USA|
+Thief|1981|3.9|Crime, Thriller|Michael Mann|James Caan;Tuesday Weld;Willie Nelson|USA|
+Hell or High Water|2016|3.8|Crime, Western|David Mackenzie|Jeff Bridges;Chris Pine;Ben Foster|USA|
+Snatch|2000|3.8|Crime, Comedy|Guy Ritchie|Jason Statham;Brad Pitt;Benicio Del Toro|UK, USA|
+Ocean's Eleven|2001|3.8|Crime, Thriller|Steven Soderbergh|George Clooney;Brad Pitt;Matt Damon|USA|oceans 11;ocean s 11
+Inside Man|2006|3.7|Crime, Thriller|Spike Lee|Denzel Washington;Clive Owen;Jodie Foster|USA|
+Baby Driver|2017|3.6|Action, Crime|Edgar Wright|Ansel Elgort;Kevin Spacey;Lily James|UK, USA|
+The Italian Job|1969|3.6|Comedy, Crime|Peter Collinson|Michael Caine;Noël Coward;Benny Hill|UK|
+Logan Lucky|2017|3.5|Comedy, Crime|Steven Soderbergh|Channing Tatum;Adam Driver;Riley Keough|USA|
+Point Break|1991|3.5|Action, Crime|Kathryn Bigelow|Patrick Swayze;Keanu Reeves;Gary Busey|USA|
+The Town|2010|3.5|Crime, Drama|Ben Affleck|Ben Affleck;Rebecca Hall;Jon Hamm|USA|
+Widows|2018|3.5|Crime, Thriller|Steve McQueen|Viola Davis;Michelle Rodriguez;Elizabeth Debicki|UK, USA|
+Bottle Rocket|1996|3.5|Comedy, Crime|Wes Anderson|Luke Wilson;Owen Wilson;Robert Musgrave|USA|`],
+["trains","Trains","Movies set on (or around) a train",`
+Snowpiercer|2013|3.6|Sci-Fi, Action|Bong Joon-ho|Chris Evans;Song Kang-ho;Tilda Swinton|South Korea, USA|
+Train to Busan|2016|3.8|Horror, Action|Yeon Sang-ho|Gong Yoo;Jung Yu-mi;Ma Dong-seok|South Korea|
+The General|1926|4.3|Comedy, Action|Buster Keaton & Clyde Bruckman|Buster Keaton;Marion Mack;Glen Cavender|USA|
+North by Northwest|1959|4.2|Thriller, Mystery|Alfred Hitchcock|Cary Grant;Eva Marie Saint;James Mason|USA|
+Strangers on a Train|1951|4.1|Thriller, Crime|Alfred Hitchcock|Farley Granger;Ruth Roman;Robert Walker|USA|
+The Lady Vanishes|1938|4.0|Mystery, Thriller|Alfred Hitchcock|Margaret Lockwood;Michael Redgrave;Paul Lukas|UK|
+Murder on the Orient Express|1974|3.7|Mystery, Crime|Sidney Lumet|Albert Finney;Lauren Bacall;Martin Balsam|UK|
+Some Like It Hot|1959|4.1|Comedy, Romance|Billy Wilder|Marilyn Monroe;Tony Curtis;Jack Lemmon|USA|
+The Darjeeling Limited|2007|3.7|Comedy, Drama|Wes Anderson|Owen Wilson;Adrien Brody;Jason Schwartzman|USA|
+Source Code|2011|3.4|Sci-Fi, Thriller|Duncan Jones|Jake Gyllenhaal;Michelle Monaghan;Vera Farmiga|USA|
+Unstoppable|2010|3.2|Action, Thriller|Tony Scott|Denzel Washington;Chris Pine;Rosario Dawson|USA|
+Runaway Train|1985|3.6|Action, Thriller|Andrei Konchalovsky|Jon Voight;Eric Roberts;Rebecca De Mornay|USA|
+The Taking of Pelham One Two Three|1974|3.8|Crime, Thriller|Joseph Sargent|Walter Matthau;Robert Shaw;Martin Balsam|USA|pelham 123;taking of pelham 123;pelham one two three
+Bullet Train|2022|3.2|Action, Comedy|David Leitch|Brad Pitt;Joey King;Aaron Taylor-Johnson|USA|
+Shanghai Express|1932|3.8|Drama, Romance|Josef von Sternberg|Marlene Dietrich;Clive Brook;Anna May Wong|USA|
+The Polar Express|2004|2.9|Animation, Family|Robert Zemeckis|Tom Hanks;Leslie Zemeckis;Eddie Deezen|USA|
+Mission: Impossible|1996|3.6|Action, Thriller|Brian De Palma|Tom Cruise;Jon Voight;Emmanuelle Béart|USA|
+Silver Streak|1976|3.5|Comedy, Thriller|Arthur Hiller|Gene Wilder;Jill Clayburgh;Richard Pryor|USA|
+Night Train to Munich|1940|3.7|Thriller|Carol Reed|Margaret Lockwood;Rex Harrison;Paul Henreid|UK|
+The Narrow Margin|1952|3.8|Film Noir, Thriller|Richard Fleischer|Charles McGraw;Marie Windsor;Jacqueline White|USA|`],
+["time","Time loops & travel","Time loops and time travel",`
+Groundhog Day|1993|3.9|Comedy, Fantasy|Harold Ramis|Bill Murray;Andie MacDowell;Chris Elliott|USA|
+Back to the Future|1985|4.2|Sci-Fi, Comedy|Robert Zemeckis|Michael J. Fox;Christopher Lloyd;Lea Thompson|USA|
+The Terminator|1984|3.9|Sci-Fi, Action|James Cameron|Arnold Schwarzenegger;Michael Biehn;Linda Hamilton|USA|
+Primer|2004|3.7|Sci-Fi, Thriller|Shane Carruth|Shane Carruth;David Sullivan;Casey Gooden|USA|
+Palm Springs|2020|3.6|Comedy, Romance|Max Barbakow|Andy Samberg;Cristin Milioti;J.K. Simmons|USA|
+Edge of Tomorrow|2014|3.7|Sci-Fi, Action|Doug Liman|Tom Cruise;Emily Blunt;Bill Paxton|USA|live die repeat
+La Jetée|1962|4.1|Sci-Fi|Chris Marker|Hélène Chatelain;Davos Hanich;Jacques Ledoux|France|
+12 Monkeys|1995|3.9|Sci-Fi, Thriller|Terry Gilliam|Bruce Willis;Madeleine Stowe;Brad Pitt|USA|twelve monkeys
+Looper|2012|3.6|Sci-Fi, Action|Rian Johnson|Joseph Gordon-Levitt;Bruce Willis;Emily Blunt|USA|
+Happy Death Day|2017|3.2|Horror, Comedy|Christopher Landon|Jessica Rothe;Israel Broussard;Ruby Modine|USA|
+Predestination|2014|3.7|Sci-Fi, Thriller|Michael & Peter Spierig|Ethan Hawke;Sarah Snook;Noah Taylor|Australia|
+About Time|2013|3.8|Romance, Comedy|Richard Curtis|Domhnall Gleeson;Rachel McAdams;Bill Nighy|UK|
+Tenet|2020|3.2|Sci-Fi, Action|Christopher Nolan|John David Washington;Robert Pattinson;Elizabeth Debicki|UK, USA|
+Timecrimes|2007|3.6|Sci-Fi, Thriller|Nacho Vigalondo|Karra Elejalde;Candela Fernández;Bárbara Goenaga|Spain|los cronocrimenes
+Bill & Ted's Excellent Adventure|1989|3.3|Comedy, Sci-Fi|Stephen Herek|Keanu Reeves;Alex Winter;George Carlin|USA|bill and teds excellent adventure;bill and ted
+Hot Tub Time Machine|2010|2.8|Comedy|Steve Pink|John Cusack;Rob Corddry;Craig Robinson|USA|
+Triangle|2009|3.5|Horror, Thriller|Christopher Smith|Melissa George;Michael Dorman;Liam Hemsworth|UK, Australia|
+Run Lola Run|1998|3.8|Thriller, Crime|Tom Tykwer|Franka Potente;Moritz Bleibtreu;Herbert Knaup|Germany|lola rennt
+Donnie Darko|2001|3.7|Sci-Fi, Drama|Richard Kelly|Jake Gyllenhaal;Jena Malone;Drew Barrymore|USA|
+Time Bandits|1981|3.5|Fantasy, Adventure|Terry Gilliam|John Cleese;Sean Connery;Shelley Duvall|UK|`],
+["courtroom","Courtroom","Courtroom dramas and trials",`
+12 Angry Men|1957|4.6|Drama|Sidney Lumet|Henry Fonda;Lee J. Cobb;Martin Balsam|USA|twelve angry men
+To Kill a Mockingbird|1962|4.1|Drama|Robert Mulligan|Gregory Peck;Mary Badham;Phillip Alford|USA|
+Anatomy of a Murder|1959|4.1|Drama, Crime|Otto Preminger|James Stewart;Lee Remick;Ben Gazzara|USA|
+Witness for the Prosecution|1957|4.3|Mystery, Drama|Billy Wilder|Tyrone Power;Marlene Dietrich;Charles Laughton|USA|
+A Few Good Men|1992|3.7|Drama, Thriller|Rob Reiner|Tom Cruise;Jack Nicholson;Demi Moore|USA|
+My Cousin Vinny|1992|3.7|Comedy, Crime|Jonathan Lynn|Joe Pesci;Ralph Macchio;Marisa Tomei|USA|
+Anatomy of a Fall|2023|4.1|Drama, Thriller|Justine Triet|Sandra Hüller;Swann Arlaud;Milo Machado-Graner|France|anatomie d une chute
+Paths of Glory|1957|4.4|War, Drama|Stanley Kubrick|Kirk Douglas;Ralph Meeker;Adolphe Menjou|USA|
+The Verdict|1982|3.9|Drama|Sidney Lumet|Paul Newman;Charlotte Rampling;Jack Warden|USA|
+Kramer vs. Kramer|1979|3.9|Drama|Robert Benton|Dustin Hoffman;Meryl Streep;Jane Alexander|USA|kramer versus kramer
+Philadelphia|1993|3.8|Drama|Jonathan Demme|Tom Hanks;Denzel Washington;Jason Robards|USA|
+Primal Fear|1996|3.7|Crime, Thriller|Gregory Hoblit|Richard Gere;Laura Linney;Edward Norton|USA|
+The Trial of the Chicago 7|2020|3.7|Drama, History|Aaron Sorkin|Eddie Redmayne;Alex Sharp;Sacha Baron Cohen|USA|trial of the chicago seven;chicago 7
+Judgment at Nuremberg|1961|4.3|Drama, History|Stanley Kramer|Spencer Tracy;Burt Lancaster;Richard Widmark|USA|judgement at nuremberg
+The Passion of Joan of Arc|1928|4.5|Drama, History|Carl Theodor Dreyer|Renée Jeanne Falconetti;Eugène Silvain;André Berley|France|la passion de jeanne d arc
+Legally Blonde|2001|3.4|Comedy|Robert Luketic|Reese Witherspoon;Luke Wilson;Selma Blair|USA|
+In the Name of the Father|1993|4.1|Drama, Biography|Jim Sheridan|Daniel Day-Lewis;Emma Thompson;Pete Postlethwaite|Ireland, UK|
+A Separation|2011|4.2|Drama|Asghar Farhadi|Peyman Moaadi;Leila Hatami;Sareh Bayat|Iran|
+The Lincoln Lawyer|2011|3.3|Crime, Thriller|Brad Furman|Matthew McConaughey;Marisa Tomei;Ryan Phillippe|USA|
+Inherit the Wind|1960|4.0|Drama|Stanley Kramer|Spencer Tracy;Fredric March;Gene Kelly|USA|`],
+["road","Road movies","Road movies",`
+Thelma & Louise|1991|3.9|Crime, Drama|Ridley Scott|Susan Sarandon;Geena Davis;Harvey Keitel|USA|
+Easy Rider|1969|3.6|Drama|Dennis Hopper|Peter Fonda;Dennis Hopper;Jack Nicholson|USA|
+Paris, Texas|1984|4.3|Drama|Wim Wenders|Harry Dean Stanton;Nastassja Kinski;Dean Stockwell|West Germany, France|
+Little Miss Sunshine|2006|3.9|Comedy, Drama|Jonathan Dayton & Valerie Faris|Greg Kinnear;Steve Carell;Toni Collette|USA|
+Y Tu Mamá También|2001|3.9|Drama, Comedy|Alfonso Cuarón|Maribel Verdú;Gael García Bernal;Diego Luna|Mexico|
+Planes, Trains and Automobiles|1987|3.9|Comedy|John Hughes|Steve Martin;John Candy;Laila Robins|USA|
+Badlands|1973|4.0|Crime, Drama|Terrence Malick|Martin Sheen;Sissy Spacek;Warren Oates|USA|
+Wild Strawberries|1957|4.2|Drama|Ingmar Bergman|Victor Sjöström;Bibi Andersson;Ingrid Thulin|Sweden|smultronstallet
+It Happened One Night|1934|4.1|Comedy, Romance|Frank Capra|Clark Gable;Claudette Colbert;Walter Connolly|USA|
+Mad Max: Fury Road|2015|4.2|Action, Sci-Fi|George Miller|Tom Hardy;Charlize Theron;Nicholas Hoult|Australia, USA|fury road
+The Motorcycle Diaries|2004|3.8|Drama, Biography|Walter Salles|Gael García Bernal;Rodrigo de la Serna;Mía Maestro|Argentina, Brazil|diarios de motocicleta
+Rain Man|1988|3.7|Drama|Barry Levinson|Dustin Hoffman;Tom Cruise;Valeria Golino|USA|
+Sideways|2004|3.7|Comedy, Drama|Alexander Payne|Paul Giamatti;Thomas Haden Church;Virginia Madsen|USA|
+Nebraska|2013|3.9|Comedy, Drama|Alexander Payne|Bruce Dern;Will Forte;June Squibb|USA|
+Midnight Run|1988|3.8|Action, Comedy|Martin Brest|Robert De Niro;Charles Grodin;Yaphet Kotto|USA|
+Two-Lane Blacktop|1971|3.8|Drama|Monte Hellman|James Taylor;Warren Oates;Laurie Bird|USA|
+Dumb and Dumber|1994|3.4|Comedy|Peter Farrelly|Jim Carrey;Jeff Daniels;Lauren Holly|USA|dumb dumber
+Alice in the Cities|1974|4.1|Drama|Wim Wenders|Rüdiger Vogler;Yella Rottländer;Lisa Kreuzer|West Germany|alice in den stadten
+Vanishing Point|1971|3.6|Action|Richard C. Sarafian|Barry Newman;Cleavon Little;Dean Jagger|USA|
+National Lampoon's Vacation|1983|3.4|Comedy|Harold Ramis|Chevy Chase;Beverly D'Angelo;Imogene Coca|USA|vacation;national lampoons vacation`],
+["sports","Sports","Sports movies",`
+Raging Bull|1980|4.1|Drama, Biography|Martin Scorsese|Robert De Niro;Cathy Moriarty;Joe Pesci|USA|
+Rocky|1976|3.9|Drama|John G. Avildsen|Sylvester Stallone;Talia Shire;Burt Young|USA|
+Moneyball|2011|3.9|Drama, Biography|Bennett Miller|Brad Pitt;Jonah Hill;Philip Seymour Hoffman|USA|
+Hoop Dreams|1994|4.3|Documentary|Steve James|William Gates;Arthur Agee;Emma Gates|USA|
+Rush|2013|3.8|Drama, Biography|Ron Howard|Chris Hemsworth;Daniel Brühl;Olivia Wilde|UK, Germany|
+Bull Durham|1988|3.6|Comedy, Romance|Ron Shelton|Kevin Costner;Susan Sarandon;Tim Robbins|USA|
+The Fighter|2010|3.7|Drama, Biography|David O. Russell|Mark Wahlberg;Christian Bale;Amy Adams|USA|
+Million Dollar Baby|2004|3.9|Drama|Clint Eastwood|Clint Eastwood;Hilary Swank;Morgan Freeman|USA|
+Remember the Titans|2000|3.6|Drama|Boaz Yakin|Denzel Washington;Will Patton;Wood Harris|USA|
+Hoosiers|1986|3.6|Drama|David Anspaugh|Gene Hackman;Barbara Hershey;Dennis Hopper|USA|
+Caddyshack|1980|3.4|Comedy|Harold Ramis|Chevy Chase;Rodney Dangerfield;Ted Knight|USA|
+Slap Shot|1977|3.6|Comedy|George Roy Hill|Paul Newman;Strother Martin;Michael Ontkean|USA|
+Creed|2015|3.8|Drama|Ryan Coogler|Michael B. Jordan;Sylvester Stallone;Tessa Thompson|USA|
+Challengers|2024|3.9|Drama, Romance|Luca Guadagnino|Zendaya;Mike Faist;Josh O'Connor|USA|
+Ford v Ferrari|2019|3.9|Drama, Biography|James Mangold|Matt Damon;Christian Bale;Jon Bernthal|USA|ford vs ferrari;le mans 66
+A League of Their Own|1992|3.7|Comedy, Drama|Penny Marshall|Tom Hanks;Geena Davis;Madonna|USA|
+Field of Dreams|1989|3.7|Drama, Fantasy|Phil Alden Robinson|Kevin Costner;Amy Madigan;James Earl Jones|USA|
+The Wrestler|2008|3.9|Drama|Darren Aronofsky|Mickey Rourke;Marisa Tomei;Evan Rachel Wood|USA|
+White Men Can't Jump|1992|3.5|Comedy|Ron Shelton|Wesley Snipes;Woody Harrelson;Rosie Perez|USA|
+The Iron Claw|2023|3.9|Drama, Biography|Sean Durkin|Zac Efron;Jeremy Allen White;Harris Dickinson|USA|`],
+["space","Space","Movies set in space",`
+2001: A Space Odyssey|1968|4.2|Sci-Fi|Stanley Kubrick|Keir Dullea;Gary Lockwood;William Sylvester|UK, USA|2001;2001 a space odyssey
+Alien|1979|4.3|Sci-Fi, Horror|Ridley Scott|Tom Skerritt;Sigourney Weaver;Veronica Cartwright|UK, USA|
+Interstellar|2014|4.3|Sci-Fi, Drama|Christopher Nolan|Matthew McConaughey;Anne Hathaway;Jessica Chastain|USA, UK|
+Gravity|2013|3.6|Sci-Fi, Thriller|Alfonso Cuarón|Sandra Bullock;George Clooney;Ed Harris|UK, USA|
+Solaris|1972|4.1|Sci-Fi, Drama|Andrei Tarkovsky|Natalya Bondarchuk;Donatas Banionis;Jüri Järvet|Soviet Union|solyaris
+Apollo 13|1995|3.8|Drama, History|Ron Howard|Tom Hanks;Bill Paxton;Kevin Bacon|USA|
+Moon|2009|3.8|Sci-Fi, Drama|Duncan Jones|Sam Rockwell;Kevin Spacey;Dominique McElligott|UK|
+The Martian|2015|3.8|Sci-Fi, Adventure|Ridley Scott|Matt Damon;Jessica Chastain;Kristen Wiig|USA, UK|
+Sunshine|2007|3.6|Sci-Fi, Thriller|Danny Boyle|Cillian Murphy;Rose Byrne;Chris Evans|UK|
+Aliens|1986|4.1|Sci-Fi, Action|James Cameron|Sigourney Weaver;Michael Biehn;Carrie Henn|USA, UK|
+High Life|2018|3.3|Sci-Fi, Drama|Claire Denis|Robert Pattinson;Juliette Binoche;André Benjamin|France, Germany|
+Event Horizon|1997|3.4|Sci-Fi, Horror|Paul W. S. Anderson|Laurence Fishburne;Sam Neill;Kathleen Quinlan|UK, USA|
+WALL-E|2008|4.1|Animation, Sci-Fi|Andrew Stanton|Ben Burtt;Elissa Knight;Jeff Garlin|USA|walle
+The Right Stuff|1983|3.9|Drama, History|Philip Kaufman|Sam Shepard;Scott Glenn;Ed Harris|USA|
+First Man|2018|3.6|Drama, Biography|Damien Chazelle|Ryan Gosling;Claire Foy;Jason Clarke|USA|
+Ad Astra|2019|3.2|Sci-Fi, Drama|James Gray|Brad Pitt;Tommy Lee Jones;Ruth Negga|USA|
+Star Wars|1977|4.1|Sci-Fi, Adventure|George Lucas|Mark Hamill;Harrison Ford;Carrie Fisher|USA|a new hope;star wars a new hope;star wars episode iv a new hope
+Dark Star|1974|3.1|Sci-Fi, Comedy|John Carpenter|Brian Narelle;Cal Kuniholm;Dre Pahich|USA|
+Galaxy Quest|1999|3.6|Comedy, Sci-Fi|Dean Parisot|Tim Allen;Sigourney Weaver;Alan Rickman|USA|
+Spaceballs|1987|3.4|Comedy, Sci-Fi|Mel Brooks|Mel Brooks;John Candy;Rick Moranis|USA|`],
+["debuts","Debuts","Great directorial debuts",`
+Citizen Kane|1941|4.1|Drama, Mystery|Orson Welles|Orson Welles;Joseph Cotten;Dorothy Comingore|USA|
+The 400 Blows|1959|4.2|Drama|François Truffaut|Jean-Pierre Léaud;Claire Maurier;Albert Rémy|France|400 blows;the four hundred blows;les quatre cents coups
+Breathless|1960|3.9|Crime, Drama|Jean-Luc Godard|Jean-Paul Belmondo;Jean Seberg;Daniel Boulanger|France|a bout de souffle
+Get Out|2017|4.1|Horror, Thriller|Jordan Peele|Daniel Kaluuya;Allison Williams;Catherine Keener|USA|
+Aftersun|2022|4.2|Drama|Charlotte Wells|Paul Mescal;Frankie Corio;Celia Rowlson-Hall|UK, USA|
+Blood Simple|1984|3.9|Crime, Thriller|Joel & Ethan Coen|John Getz;Frances McDormand;Dan Hedaya|USA|
+Sex, Lies, and Videotape|1989|3.6|Drama|Steven Soderbergh|James Spader;Andie MacDowell;Peter Gallagher|USA|
+The Maltese Falcon|1941|3.9|Film Noir, Mystery|John Huston|Humphrey Bogart;Mary Astor;Gladys George|USA|
+The Night of the Hunter|1955|4.1|Thriller, Drama|Charles Laughton|Robert Mitchum;Shelley Winters;Lillian Gish|USA|
+Hereditary|2018|3.9|Horror|Ari Aster|Toni Collette;Alex Wolff;Milly Shapiro|USA|
+The Witch|2015|3.8|Horror|Robert Eggers|Anya Taylor-Joy;Ralph Ineson;Kate Dickie|USA, Canada|the vvitch
+Eighth Grade|2018|3.9|Comedy, Drama|Bo Burnham|Elsie Fisher;Josh Hamilton;Emily Robinson|USA|8th grade
+Shallow Grave|1994|3.6|Thriller, Crime|Danny Boyle|Kerry Fox;Christopher Eccleston;Ewan McGregor|UK|
+The Virgin Suicides|1999|3.7|Drama|Sofia Coppola|James Woods;Kathleen Turner;Kirsten Dunst|USA|
+Being John Malkovich|1999|3.9|Comedy, Fantasy|Spike Jonze|John Cusack;Cameron Diaz;Catherine Keener|USA|
+Pather Panchali|1955|4.3|Drama|Satyajit Ray|Kanu Banerjee;Karuna Banerjee;Subir Banerjee|India|
+Clerks|1994|3.6|Comedy|Kevin Smith|Brian O'Halloran;Jeff Anderson;Marilyn Ghigliotti|USA|
+Following|1998|3.5|Thriller, Crime|Christopher Nolan|Jeremy Theobald;Alex Haw;Lucy Russell|UK|
+Eraserhead|1977|3.9|Horror, Fantasy|David Lynch|Jack Nance;Charlotte Stewart;Allen Joseph|USA|
+Pi|1998|3.5|Thriller, Sci-Fi|Darren Aronofsky|Sean Gullette;Mark Margolis;Ben Shenkman|USA|π`],
+["christmas","Christmas","Movies set at Christmas",`
+It's a Wonderful Life|1946|4.3|Drama, Fantasy|Frank Capra|James Stewart;Donna Reed;Lionel Barrymore|USA|
+Home Alone|1990|3.6|Comedy, Family|Chris Columbus|Macaulay Culkin;Joe Pesci;Daniel Stern|USA|
+Elf|2003|3.5|Comedy, Family|Jon Favreau|Will Ferrell;James Caan;Zooey Deschanel|USA|
+The Shop Around the Corner|1940|4.2|Romance, Comedy|Ernst Lubitsch|Margaret Sullavan;James Stewart;Frank Morgan|USA|
+A Christmas Story|1983|3.6|Comedy, Family|Bob Clark|Peter Billingsley;Melinda Dillon;Darren McGavin|USA|
+Black Christmas|1974|3.7|Horror|Bob Clark|Olivia Hussey;Keir Dullea;Margot Kidder|Canada|
+Fanny and Alexander|1982|4.2|Drama|Ingmar Bergman|Pernilla Allwin;Bertil Guve;Ewa Fröling|Sweden|fanny och alexander
+Love Actually|2003|3.3|Romance, Comedy|Richard Curtis|Hugh Grant;Liam Neeson;Colin Firth|UK|
+The Muppet Christmas Carol|1992|3.9|Family, Musical|Brian Henson|Michael Caine;Dave Goelz;Steve Whitmire|USA|
+National Lampoon's Christmas Vacation|1989|3.5|Comedy|Jeremiah S. Chechik|Chevy Chase;Beverly D'Angelo;Juliette Lewis|USA|christmas vacation
+Scrooged|1988|3.5|Comedy, Fantasy|Richard Donner|Bill Murray;Karen Allen;John Forsythe|USA|
+The Apartment|1960|4.4|Comedy, Romance|Billy Wilder|Jack Lemmon;Shirley MacLaine;Fred MacMurray|USA|
+Carol|2015|4.0|Romance, Drama|Todd Haynes|Cate Blanchett;Rooney Mara;Sarah Paulson|USA, UK|
+Miracle on 34th Street|1947|3.7|Comedy, Family|George Seaton|Maureen O'Hara;John Payne;Edmund Gwenn|USA|
+Kiss Kiss Bang Bang|2005|3.8|Crime, Comedy|Shane Black|Robert Downey Jr.;Val Kilmer;Michelle Monaghan|USA|
+Trading Places|1983|3.6|Comedy|John Landis|Dan Aykroyd;Eddie Murphy;Ralph Bellamy|USA|
+The Nightmare Before Christmas|1993|3.8|Animation, Musical|Henry Selick|Danny Elfman;Chris Sarandon;Catherine O'Hara|USA|
+Klaus|2019|4.0|Animation, Family|Sergio Pablos|Jason Schwartzman;J.K. Simmons;Rashida Jones|Spain|
+Tokyo Godfathers|2003|4.2|Animation, Comedy|Satoshi Kon|Tōru Emori;Yoshiaki Umegaki;Aya Okamoto|Japan|
+Meet Me in St. Louis|1944|3.6|Musical, Romance|Vincente Minnelli|Judy Garland;Margaret O'Brien;Mary Astor|USA|meet me in saint louis`],
+["coming-of-age","Coming of age","Coming-of-age movies",`
+Stand by Me|1986|4.0|Drama, Adventure|Rob Reiner|Wil Wheaton;River Phoenix;Corey Feldman|USA|
+Boyhood|2014|3.9|Drama|Richard Linklater|Ellar Coltrane;Patricia Arquette;Ethan Hawke|USA|
+Lady Bird|2017|3.9|Comedy, Drama|Greta Gerwig|Saoirse Ronan;Laurie Metcalf;Tracy Letts|USA|
+Moonlight|2016|4.1|Drama|Barry Jenkins|Trevante Rhodes;André Holland;Janelle Monáe|USA|
+The Breakfast Club|1985|3.8|Comedy, Drama|John Hughes|Emilio Estevez;Paul Gleason;Anthony Michael Hall|USA|
+Ferris Bueller's Day Off|1986|3.7|Comedy|John Hughes|Matthew Broderick;Alan Ruck;Mia Sara|USA|ferris bueller;ferris buellers day off
+The Graduate|1967|3.9|Comedy, Drama|Mike Nichols|Anne Bancroft;Dustin Hoffman;Katharine Ross|USA|
+Rushmore|1998|3.9|Comedy, Drama|Wes Anderson|Jason Schwartzman;Bill Murray;Olivia Williams|USA|
+Call Me by Your Name|2017|4.0|Romance, Drama|Luca Guadagnino|Armie Hammer;Timothée Chalamet;Michael Stuhlbarg|Italy, USA|cmbyn
+Mid90s|2018|3.8|Comedy, Drama|Jonah Hill|Sunny Suljic;Katherine Waterston;Lucas Hedges|USA|mid 90s
+The Edge of Seventeen|2016|3.7|Comedy, Drama|Kelly Fremon Craig|Hailee Steinfeld;Woody Harrelson;Kyra Sedgwick|USA|edge of 17
+Almost Famous|2000|4.0|Comedy, Drama|Cameron Crowe|Billy Crudup;Frances McDormand;Kate Hudson|USA|
+The Perks of Being a Wallflower|2012|3.8|Drama|Stephen Chbosky|Logan Lerman;Emma Watson;Ezra Miller|USA|
+Fast Times at Ridgemont High|1982|3.6|Comedy|Amy Heckerling|Sean Penn;Jennifer Jason Leigh;Judge Reinhold|USA|
+Mustang|2015|4.0|Drama|Deniz Gamze Ergüven|Güneş Şensoy;Doğa Doğuşlu;Elit İşcan|France, Turkey|
+Girlhood|2014|3.7|Drama|Céline Sciamma|Karidja Touré;Assa Sylla;Lindsay Karamoh|France|bande de filles
+My Life as a Dog|1985|3.9|Comedy, Drama|Lasse Hallström|Anton Glanzelius;Tomas von Brömssen;Anki Lidén|Sweden|mitt liv som hund
+Clueless|1995|3.7|Comedy|Amy Heckerling|Alicia Silverstone;Stacey Dash;Brittany Murphy|USA|
+Good Will Hunting|1997|4.0|Drama|Gus Van Sant|Robin Williams;Matt Damon;Ben Affleck|USA|
+20th Century Women|2016|3.9|Comedy, Drama|Mike Mills|Annette Bening;Elle Fanning;Greta Gerwig|USA|twentieth century women`],
+["westerns","Westerns","Westerns, classic and modern",`
+The Good, the Bad and the Ugly|1966|4.5|Western|Sergio Leone|Clint Eastwood;Eli Wallach;Lee Van Cleef|Italy|good bad and ugly;the good the bad the ugly
+Once Upon a Time in the West|1968|4.4|Western|Sergio Leone|Henry Fonda;Claudia Cardinale;Jason Robards|Italy, USA|
+The Searchers|1956|3.9|Western|John Ford|John Wayne;Jeffrey Hunter;Vera Miles|USA|
+Unforgiven|1992|4.1|Western|Clint Eastwood|Clint Eastwood;Gene Hackman;Morgan Freeman|USA|
+High Noon|1952|4.0|Western|Fred Zinnemann|Gary Cooper;Thomas Mitchell;Lloyd Bridges|USA|
+Butch Cassidy and the Sundance Kid|1969|3.9|Western|George Roy Hill|Paul Newman;Robert Redford;Katharine Ross|USA|butch cassidy
+The Wild Bunch|1969|4.0|Western|Sam Peckinpah|William Holden;Ernest Borgnine;Robert Ryan|USA|
+Rio Bravo|1959|4.0|Western|Howard Hawks|John Wayne;Dean Martin;Ricky Nelson|USA|
+True Grit|2010|3.8|Western|Joel & Ethan Coen|Jeff Bridges;Hailee Steinfeld;Matt Damon|USA|
+No Country for Old Men|2007|4.3|Crime, Thriller|Joel & Ethan Coen|Tommy Lee Jones;Javier Bardem;Josh Brolin|USA|
+McCabe & Mrs. Miller|1971|4.0|Western|Robert Altman|Warren Beatty;Julie Christie;Rene Auberjonois|USA|mccabe and mrs miller
+Django Unchained|2012|4.1|Western|Quentin Tarantino|Jamie Foxx;Christoph Waltz;Leonardo DiCaprio|USA|
+The Assassination of Jesse James by the Coward Robert Ford|2007|4.0|Western|Andrew Dominik|Brad Pitt;Casey Affleck;Sam Shepard|USA|assassination of jesse james;the assassination of jesse james
+Shane|1953|3.8|Western|George Stevens|Alan Ladd;Jean Arthur;Van Heflin|USA|
+Stagecoach|1939|3.8|Western|John Ford|Claire Trevor;John Wayne;Andy Devine|USA|
+3:10 to Yuma|2007|3.7|Western|James Mangold|Russell Crowe;Christian Bale;Peter Fonda|USA|310 to yuma;three ten to yuma
+For a Few Dollars More|1965|4.2|Western|Sergio Leone|Clint Eastwood;Lee Van Cleef;Gian Maria Volonté|Italy|
+The Power of the Dog|2021|3.7|Western, Drama|Jane Campion|Benedict Cumberbatch;Kirsten Dunst;Jesse Plemons|New Zealand, UK|
+Tombstone|1993|3.7|Western|George P. Cosmatos|Kurt Russell;Val Kilmer;Sam Elliott|USA|
+Dead Man|1995|4.0|Western|Jim Jarmusch|Johnny Depp;Gary Farmer;Lance Henriksen|USA|`],
+["musicals","Musicals","Movie musicals",`
+Singin' in the Rain|1952|4.3|Musical, Comedy|Gene Kelly & Stanley Donen|Gene Kelly;Donald O'Connor;Debbie Reynolds|USA|singing in the rain
+The Umbrellas of Cherbourg|1964|4.1|Musical, Romance|Jacques Demy|Catherine Deneuve;Nino Castelnuovo;Anne Vernon|France|les parapluies de cherbourg
+West Side Story|1961|3.7|Musical, Romance|Robert Wise & Jerome Robbins|Natalie Wood;Richard Beymer;Russ Tamblyn|USA|
+The Sound of Music|1965|3.8|Musical, Drama|Robert Wise|Julie Andrews;Christopher Plummer;Eleanor Parker|USA|
+La La Land|2016|4.0|Musical, Romance|Damien Chazelle|Ryan Gosling;Emma Stone;John Legend|USA|
+The Wizard of Oz|1939|3.9|Musical, Fantasy|Victor Fleming|Judy Garland;Frank Morgan;Ray Bolger|USA|
+Cabaret|1972|4.0|Musical, Drama|Bob Fosse|Liza Minnelli;Michael York;Helmut Griem|USA|
+All That Jazz|1979|4.0|Musical, Drama|Bob Fosse|Roy Scheider;Jessica Lange;Leland Palmer|USA|
+The Rocky Horror Picture Show|1975|3.5|Musical, Comedy|Jim Sharman|Tim Curry;Susan Sarandon;Barry Bostwick|UK, USA|rocky horror
+Grease|1978|3.4|Musical, Romance|Randal Kleiser|John Travolta;Olivia Newton-John;Stockard Channing|USA|
+Mary Poppins|1964|3.7|Musical, Family|Robert Stevenson|Julie Andrews;Dick Van Dyke;David Tomlinson|USA|
+Little Shop of Horrors|1986|3.7|Musical, Comedy|Frank Oz|Rick Moranis;Ellen Greene;Vincent Gardenia|USA|
+Moulin Rouge!|2001|3.8|Musical, Romance|Baz Luhrmann|Nicole Kidman;Ewan McGregor;John Leguizamo|Australia, USA|
+Hedwig and the Angry Inch|2001|3.8|Musical, Comedy|John Cameron Mitchell|John Cameron Mitchell;Michael Pitt;Miriam Shor|USA|hedwig
+The Young Girls of Rochefort|1967|4.0|Musical, Romance|Jacques Demy|Catherine Deneuve;Françoise Dorléac;George Chakiris|France|les demoiselles de rochefort
+An American in Paris|1951|3.7|Musical, Romance|Vincente Minnelli|Gene Kelly;Leslie Caron;Oscar Levant|USA|
+Dancer in the Dark|2000|4.0|Musical, Drama|Lars von Trier|Björk;Catherine Deneuve;David Morse|Denmark|
+Sweeney Todd: The Demon Barber of Fleet Street|2007|3.6|Musical, Horror|Tim Burton|Johnny Depp;Helena Bonham Carter;Alan Rickman|USA, UK|sweeney todd
+Chicago|2002|3.5|Musical, Crime|Rob Marshall|Renée Zellweger;Catherine Zeta-Jones;Richard Gere|USA|
+Annette|2021|3.5|Musical, Drama|Leos Carax|Adam Driver;Marion Cotillard;Simon Helberg|France|`],
+["tokyo","Tokyo","Movies set in Tokyo",`
+Lost in Translation|2003|3.9|Drama, Romance|Sofia Coppola|Bill Murray;Scarlett Johansson;Giovanni Ribisi|USA, Japan|
+Tokyo Story|1953|4.3|Drama|Yasujirō Ozu|Chishū Ryū;Chieko Higashiyama;Setsuko Hara|Japan|tokyo monogatari
+Perfect Days|2023|4.2|Drama|Wim Wenders|Kōji Yakusho;Tokio Emoto;Arisa Nakano|Japan, Germany|
+Akira|1988|4.1|Animation, Sci-Fi|Katsuhiro Otomo|Mitsuo Iwata;Nozomu Sasaki;Mami Koyama|Japan|
+Shoplifters|2018|4.2|Drama|Hirokazu Kore-eda|Lily Franky;Sakura Ando;Mayu Matsuoka|Japan|manbiki kazoku
+Tokyo Drifter|1966|3.7|Action, Crime|Seijun Suzuki|Tetsuya Watari;Chieko Matsubara;Hideaki Nitani|Japan|
+Ikiru|1952|4.4|Drama|Akira Kurosawa|Takashi Shimura;Shinichi Himori;Haruo Tanaka|Japan|
+Stray Dog|1949|4.0|Crime, Film Noir|Akira Kurosawa|Toshiro Mifune;Takashi Shimura;Keiko Awaji|Japan|
+Your Name.|2016|4.2|Animation, Romance|Makoto Shinkai|Ryunosuke Kamiki;Mone Kamishiraishi;Masami Nagasawa|Japan|kimi no na wa
+Perfect Blue|1997|4.2|Animation, Thriller|Satoshi Kon|Junko Iwao;Rica Matsumoto;Shinpachi Tsuji|Japan|
+Godzilla|1954|3.8|Sci-Fi, Horror|Ishirō Honda|Akira Takarada;Momoko Kōchi;Akihiko Hirata|Japan|gojira
+Kill Bill: Vol. 1|2003|4.0|Action|Quentin Tarantino|Uma Thurman;Lucy Liu;Vivica A. Fox|USA|kill bill;kill bill vol 1;kill bill volume 1
+Tokyo Sonata|2008|3.9|Drama|Kiyoshi Kurosawa|Teruyuki Kagawa;Kyōko Koizumi;Yū Koyanagi|Japan, Netherlands|
+Enter the Void|2009|3.5|Drama, Fantasy|Gaspar Noé|Nathaniel Brown;Paz de la Huerta;Cyril Roy|France|
+Like Someone in Love|2012|3.7|Drama|Abbas Kiarostami|Rin Takanashi;Tadashi Okuno;Ryō Kase|Japan, France|
+Weathering with You|2019|3.8|Animation, Romance|Makoto Shinkai|Kotaro Daigo;Nana Mori;Shun Oguri|Japan|tenki no ko
+Cure|1997|4.0|Horror, Crime|Kiyoshi Kurosawa|Kōji Yakusho;Masato Hagiwara;Tsuyoshi Ujiki|Japan|
+The Fast and the Furious: Tokyo Drift|2006|2.9|Action|Justin Lin|Lucas Black;Bow Wow;Nathalie Kelley|USA|tokyo drift
+Shall We Dance?|1996|3.8|Comedy, Romance|Masayuki Suo|Kōji Yakusho;Tamiyo Kusakari;Naoto Takenaka|Japan|
+Shin Godzilla|2016|3.6|Sci-Fi, Action|Hideaki Anno & Shinji Higuchi|Hiroki Hasegawa;Yutaka Takenouchi;Satomi Ishihara|Japan|`],
+["making-movies","Making movies","Movies about making movies",`
+8½|1963|4.2|Drama, Fantasy|Federico Fellini|Marcello Mastroianni;Claudia Cardinale;Anouk Aimée|Italy|8 1 2;8 and a half;eight and a half;otto e mezzo
+Day for Night|1973|4.0|Comedy, Drama|François Truffaut|Jacqueline Bisset;Jean-Pierre Aumont;Valentina Cortese|France|la nuit americaine
+Sunset Boulevard|1950|4.3|Drama, Film Noir|Billy Wilder|William Holden;Gloria Swanson;Erich von Stroheim|USA|sunset blvd
+Contempt|1963|3.9|Drama|Jean-Luc Godard|Brigitte Bardot;Michel Piccoli;Jack Palance|France, Italy|le mepris
+Ed Wood|1994|3.9|Comedy, Biography|Tim Burton|Johnny Depp;Martin Landau;Sarah Jessica Parker|USA|
+Living in Oblivion|1995|3.8|Comedy|Tom DiCillo|Steve Buscemi;Catherine Keener;Dermot Mulroney|USA|
+The Player|1992|3.8|Comedy, Crime|Robert Altman|Tim Robbins;Greta Scacchi;Fred Ward|USA|
+Tropic Thunder|2008|3.4|Comedy, Action|Ben Stiller|Ben Stiller;Jack Black;Robert Downey Jr.|USA|
+Hail, Caesar!|2016|3.4|Comedy|Joel & Ethan Coen|Josh Brolin;George Clooney;Alden Ehrenreich|USA|
+The Disaster Artist|2017|3.6|Comedy, Biography|James Franco|James Franco;Dave Franco;Seth Rogen|USA|
+Bowfinger|1999|3.4|Comedy|Frank Oz|Steve Martin;Eddie Murphy;Heather Graham|USA|
+Mank|2020|3.2|Drama, Biography|David Fincher|Gary Oldman;Amanda Seyfried;Lily Collins|USA|
+One Cut of the Dead|2017|4.0|Comedy, Horror|Shin'ichirō Ueda|Takayuki Hamatsu;Yuzuki Akiyama;Harumi Shuhama|Japan|kamera o tomeru na
+Barton Fink|1991|3.9|Comedy, Drama|Joel & Ethan Coen|John Turturro;John Goodman;Judy Davis|USA|
+Adaptation.|2002|3.9|Comedy, Drama|Spike Jonze|Nicolas Cage;Meryl Streep;Chris Cooper|USA|
+Irma Vep|1996|3.7|Comedy, Drama|Olivier Assayas|Maggie Cheung;Jean-Pierre Léaud;Nathalie Richard|France|
+Be Kind Rewind|2008|3.3|Comedy|Michel Gondry|Jack Black;Mos Def;Danny Glover|USA|
+Super 8|2011|3.3|Sci-Fi, Mystery|J.J. Abrams|Joel Courtney;Elle Fanning;Kyle Chandler|USA|
+The Artist|2011|3.6|Comedy, Romance|Michel Hazanavicius|Jean Dujardin;Bérénice Bejo;John Goodman|France|
+Get Shorty|1995|3.4|Comedy, Crime|Barry Sonnenfeld|John Travolta;Gene Hackman;Rene Russo|USA|`],
+["one-room","One location","Movies set almost entirely in one place",`
+Rope|1948|3.9|Thriller, Crime|Alfred Hitchcock|James Stewart;John Dall;Farley Granger|USA|
+Rear Window|1954|4.3|Thriller, Mystery|Alfred Hitchcock|James Stewart;Grace Kelly;Wendell Corey|USA|
+The Thing|1982|4.2|Horror, Sci-Fi|John Carpenter|Kurt Russell;Wilford Brimley;T.K. Carter|USA|
+Carnage|2011|3.5|Comedy, Drama|Roman Polanski|Jodie Foster;Kate Winslet;Christoph Waltz|France, Germany|
+Cube|1997|3.4|Sci-Fi, Horror|Vincenzo Natali|Nicole de Boer;Nicky Guadagni;David Hewlett|Canada|
+Buried|2010|3.3|Thriller|Rodrigo Cortés|Ryan Reynolds;José Luis García Pérez;Robert Paterson|Spain, USA|
+Phone Booth|2002|3.2|Thriller|Joel Schumacher|Colin Farrell;Kiefer Sutherland;Forest Whitaker|USA|
+The Hateful Eight|2015|3.9|Western, Mystery|Quentin Tarantino|Samuel L. Jackson;Kurt Russell;Jennifer Jason Leigh|USA|hateful eight;hateful 8
+Panic Room|2002|3.4|Thriller|David Fincher|Jodie Foster;Kristen Stewart;Forest Whitaker|USA|
+Room|2015|3.9|Drama|Lenny Abrahamson|Brie Larson;Jacob Tremblay;Joan Allen|Ireland, Canada|
+My Dinner with Andre|1981|4.0|Comedy, Drama|Louis Malle|Andre Gregory;Wallace Shawn;Jean Lenauer|USA|
+The Exterminating Angel|1962|4.0|Comedy, Fantasy|Luis Buñuel|Silvia Pinal;Enrique Rambal;Claudio Brook|Mexico|el angel exterminador
+Clue|1985|3.8|Comedy, Mystery|Jonathan Lynn|Eileen Brennan;Tim Curry;Madeline Kahn|USA|
+Glengarry Glen Ross|1992|4.0|Drama|James Foley|Al Pacino;Jack Lemmon;Alec Baldwin|USA|glengarry
+Lifeboat|1944|3.9|Drama, War|Alfred Hitchcock|Tallulah Bankhead;William Bendix;Walter Slezak|USA|
+The Lighthouse|2019|3.9|Horror, Drama|Robert Eggers|Robert Pattinson;Willem Dafoe;Valeriia Karaman|USA|
+The Man from Earth|2007|3.5|Sci-Fi, Drama|Richard Schenkman|David Lee Smith;Tony Todd;John Billingsley|USA|
+Saw|2004|3.4|Horror, Mystery|James Wan|Cary Elwes;Leigh Whannell;Danny Glover|USA|
+10 Cloverfield Lane|2016|3.6|Thriller, Sci-Fi|Dan Trachtenberg|Mary Elizabeth Winstead;John Goodman;John Gallagher Jr.|USA|ten cloverfield lane
+The Guilty|2018|3.6|Thriller, Crime|Gustav Möller|Jakob Cedergren;Jessica Dinnage;Omar Shargawi|Denmark|den skyldige`],
+["cons","Con artists","Con artists and grifters",`
+The Sting|1973|4.1|Crime, Comedy|George Roy Hill|Paul Newman;Robert Redford;Robert Shaw|USA|
+Catch Me If You Can|2002|3.9|Crime, Biography|Steven Spielberg|Leonardo DiCaprio;Tom Hanks;Christopher Walken|USA|
+Paper Moon|1973|4.1|Comedy, Drama|Peter Bogdanovich|Ryan O'Neal;Tatum O'Neal;Madeline Kahn|USA|
+The Lady Eve|1941|4.0|Comedy, Romance|Preston Sturges|Barbara Stanwyck;Henry Fonda;Charles Coburn|USA|
+House of Games|1987|3.7|Crime, Thriller|David Mamet|Lindsay Crouse;Joe Mantegna;Mike Nussbaum|USA|
+Matchstick Men|2003|3.4|Crime, Comedy|Ridley Scott|Nicolas Cage;Sam Rockwell;Alison Lohman|USA|
+Dirty Rotten Scoundrels|1988|3.7|Comedy|Frank Oz|Steve Martin;Michael Caine;Glenne Headly|USA|
+The Grifters|1990|3.6|Crime, Drama|Stephen Frears|Anjelica Huston;John Cusack;Annette Bening|USA|
+Nine Queens|2000|3.8|Crime, Thriller|Fabián Bielinsky|Ricardo Darín;Gastón Pauls;Leticia Brédice|Argentina|nueve reinas
+American Hustle|2013|3.3|Crime, Drama|David O. Russell|Christian Bale;Bradley Cooper;Amy Adams|USA|
+The Talented Mr. Ripley|1999|3.8|Thriller, Crime|Anthony Minghella|Matt Damon;Gwyneth Paltrow;Jude Law|USA|talented mr ripley
+The Wolf of Wall Street|2013|3.9|Crime, Comedy|Martin Scorsese|Leonardo DiCaprio;Jonah Hill;Margot Robbie|USA|wolf of wall street
+Trouble in Paradise|1932|4.0|Comedy, Romance|Ernst Lubitsch|Miriam Hopkins;Kay Francis;Herbert Marshall|USA|
+The Usual Suspects|1995|3.9|Crime, Mystery|Bryan Singer|Stephen Baldwin;Gabriel Byrne;Benicio Del Toro|USA|usual suspects
+Nightmare Alley|1947|3.9|Film Noir, Drama|Edmund Goulding|Tyrone Power;Joan Blondell;Coleen Gray|USA|
+F for Fake|1973|4.0|Documentary|Orson Welles|Orson Welles;Oja Kodar;Elmyr de Hory|France, Iran, West Germany|
+Hustlers|2019|3.3|Crime, Drama|Lorene Scafaria|Constance Wu;Jennifer Lopez;Julia Stiles|USA|
+Focus|2015|3.0|Crime, Comedy|Glenn Ficarra & John Requa|Will Smith;Margot Robbie;Rodrigo Santoro|USA|
+Parasite|2019|4.5|Thriller, Drama|Bong Joon-ho|Song Kang-ho;Lee Sun-kyun;Cho Yeo-jeong|South Korea|gisaengchung
+I Care a Lot|2020|3.1|Thriller, Comedy|J Blakeson|Rosamund Pike;Peter Dinklage;Eiza González|USA|`],
+["journalism","Journalism","Movies about journalists and the news",`
+All the President's Men|1976|4.0|Drama, History|Alan J. Pakula|Robert Redford;Dustin Hoffman;Jack Warden|USA|all the presidents men
+Spotlight|2015|4.0|Drama|Tom McCarthy|Mark Ruffalo;Michael Keaton;Rachel McAdams|USA|
+His Girl Friday|1940|4.1|Comedy|Howard Hawks|Cary Grant;Rosalind Russell;Ralph Bellamy|USA|
+Ace in the Hole|1951|4.1|Drama, Film Noir|Billy Wilder|Kirk Douglas;Jan Sterling;Robert Arthur|USA|
+Network|1976|4.2|Drama, Comedy|Sidney Lumet|Faye Dunaway;William Holden;Peter Finch|USA|
+Zodiac|2007|4.1|Mystery, Crime|David Fincher|Jake Gyllenhaal;Mark Ruffalo;Robert Downey Jr.|USA|
+Sweet Smell of Success|1957|4.2|Drama, Film Noir|Alexander Mackendrick|Burt Lancaster;Tony Curtis;Susan Harrison|USA|
+Nightcrawler|2014|3.9|Thriller, Crime|Dan Gilroy|Jake Gyllenhaal;Rene Russo;Riz Ahmed|USA|
+The Post|2017|3.4|Drama, History|Steven Spielberg|Meryl Streep;Tom Hanks;Sarah Paulson|USA|
+Good Night, and Good Luck.|2005|3.6|Drama, History|George Clooney|David Strathairn;Patricia Clarkson;George Clooney|USA|good night and good luck
+Broadcast News|1987|3.8|Comedy, Drama|James L. Brooks|William Hurt;Albert Brooks;Holly Hunter|USA|
+Shattered Glass|2003|3.6|Drama|Billy Ray|Hayden Christensen;Peter Sarsgaard;Chloë Sevigny|USA|
+The Insider|1999|3.9|Drama, Thriller|Michael Mann|Al Pacino;Russell Crowe;Christopher Plummer|USA|
+Frost/Nixon|2008|3.6|Drama, History|Ron Howard|Frank Langella;Michael Sheen;Kevin Bacon|USA|frost nixon
+The French Dispatch|2021|3.6|Comedy|Wes Anderson|Benicio Del Toro;Adrien Brody;Tilda Swinton|USA|french dispatch
+She Said|2022|3.5|Drama|Maria Schrader|Carey Mulligan;Zoe Kazan;Patricia Clarkson|USA|
+Anchorman: The Legend of Ron Burgundy|2004|3.4|Comedy|Adam McKay|Will Ferrell;Christina Applegate;Paul Rudd|USA|anchorman
+The Killing Fields|1984|3.8|Drama, War|Roland Joffé|Sam Waterston;Haing S. Ngor;John Malkovich|UK|killing fields
+Roman Holiday|1953|4.0|Romance, Comedy|William Wyler|Gregory Peck;Audrey Hepburn;Eddie Albert|USA|
+Civil War|2024|3.5|Action, War|Alex Garland|Kirsten Dunst;Wagner Moura;Cailee Spaeny|USA, UK|`],
+["food","Food","Food and cooking movies",`
+Ratatouille|2007|4.1|Animation, Comedy|Brad Bird|Patton Oswalt;Ian Holm;Lou Romano|USA|
+Tampopo|1985|4.1|Comedy|Jūzō Itami|Tsutomu Yamazaki;Nobuko Miyamoto;Kōji Yakusho|Japan|
+Big Night|1996|3.8|Comedy, Drama|Campbell Scott & Stanley Tucci|Stanley Tucci;Tony Shalhoub;Minnie Driver|USA|
+Babette's Feast|1987|4.0|Drama|Gabriel Axel|Stéphane Audran;Birgitte Federspiel;Bodil Kjer|Denmark|babettes feast;babettes gaestebud
+Eat Drink Man Woman|1994|4.0|Comedy, Drama|Ang Lee|Sihung Lung;Kuei-mei Yang;Chien-lien Wu|Taiwan|
+The Menu|2022|3.5|Thriller, Comedy|Mark Mylod|Ralph Fiennes;Anya Taylor-Joy;Nicholas Hoult|USA|
+Chef|2014|3.5|Comedy|Jon Favreau|Jon Favreau;Sofía Vergara;John Leguizamo|USA|
+Julie & Julia|2009|3.3|Comedy, Biography|Nora Ephron|Meryl Streep;Amy Adams;Stanley Tucci|USA|
+Boiling Point|2021|3.8|Drama|Philip Barantini|Stephen Graham;Vinette Robinson;Alice Feetham|UK|
+Pig|2021|3.8|Drama|Michael Sarnoski|Nicolas Cage;Alex Wolff;Adam Arkin|USA|
+The Taste of Things|2023|3.8|Drama, Romance|Trần Anh Hùng|Juliette Binoche;Benoît Magimel;Emmanuel Salinger|France|la passion de dodin bouffant
+Chocolat|2000|3.3|Romance, Drama|Lasse Hallström|Juliette Binoche;Johnny Depp;Judi Dench|UK, USA|
+Like Water for Chocolate|1992|3.5|Romance, Drama|Alfonso Arau|Lumi Cavazos;Marco Leonardi;Regina Torné|Mexico|como agua para chocolate
+The Cook, the Thief, His Wife & Her Lover|1989|3.7|Drama, Crime|Peter Greenaway|Richard Bohringer;Michael Gambon;Helen Mirren|UK, France|the cook the thief his wife and her lover
+Jiro Dreams of Sushi|2011|3.9|Documentary|David Gelb|Jiro Ono;Yoshikazu Ono;Masuhiro Yamamoto|USA|
+Burnt|2015|3.0|Drama, Comedy|John Wells|Bradley Cooper;Sienna Miller;Daniel Brühl|USA|
+Willy Wonka & the Chocolate Factory|1971|3.8|Family, Musical|Mel Stuart|Gene Wilder;Jack Albertson;Peter Ostrum|USA|willy wonka
+Mostly Martha|2001|3.4|Romance, Comedy|Sandra Nettelbeck|Martina Gedeck;Maxime Foerste;Sergio Castellitto|Germany|bella martha
+The Hundred-Foot Journey|2014|3.2|Comedy, Drama|Lasse Hallström|Helen Mirren;Om Puri;Manish Dayal|USA, India|hundred foot journey
+Delicatessen|1991|3.7|Comedy, Sci-Fi|Jean-Pierre Jeunet & Marc Caro|Dominique Pinon;Marie-Laure Dougnac;Jean-Claude Dreyfus|France|`],
+["mockumentary","Mockumentary","Mockumentaries and found footage",`
+This Is Spinal Tap|1984|3.9|Comedy, Music|Rob Reiner|Michael McKean;Christopher Guest;Harry Shearer|USA|spinal tap
+What We Do in the Shadows|2014|3.9|Comedy, Horror|Jemaine Clement & Taika Waititi|Jemaine Clement;Taika Waititi;Jonathan Brugh|New Zealand|
+Best in Show|2000|3.8|Comedy|Christopher Guest|Jennifer Coolidge;Christopher Guest;John Michael Higgins|USA|
+Borat|2006|3.4|Comedy|Larry Charles|Sacha Baron Cohen;Ken Davitian;Luenell|USA|
+Popstar: Never Stop Never Stopping|2016|3.6|Comedy, Music|Akiva Schaffer & Jorma Taccone|Andy Samberg;Jorma Taccone;Akiva Schaffer|USA|popstar
+Waiting for Guffman|1996|3.8|Comedy|Christopher Guest|Christopher Guest;Eugene Levy;Fred Willard|USA|
+A Mighty Wind|2003|3.6|Comedy, Music|Christopher Guest|Bob Balaban;Christopher Guest;John Michael Higgins|USA|
+Man Bites Dog|1992|3.8|Crime, Comedy|Rémy Belvaux, André Bonzel & Benoît Poelvoorde|Benoît Poelvoorde;Jacqueline Poelvoorde-Pappaert;Nelly Pappaert|Belgium|c est arrive pres de chez vous
+Zelig|1983|3.8|Comedy|Woody Allen|Woody Allen;Mia Farrow;Patrick Horgan|USA|
+Take the Money and Run|1969|3.6|Comedy, Crime|Woody Allen|Woody Allen;Janet Margolin;Marcel Hillaire|USA|
+The Blair Witch Project|1999|3.2|Horror|Daniel Myrick & Eduardo Sánchez|Heather Donahue;Joshua Leonard;Michael C. Williams|USA|blair witch
+Behind the Mask: The Rise of Leslie Vernon|2006|3.3|Horror, Comedy|Scott Glosserman|Nathan Baesel;Angela Goethals;Robert Englund|USA|behind the mask
+Drop Dead Gorgeous|1999|3.4|Comedy|Michael Patrick Jann|Kirstie Alley;Ellen Barkin;Kirsten Dunst|USA|
+Fear of a Black Hat|1993|3.5|Comedy, Music|Rusty Cundieff|Rusty Cundieff;Larry B. Scott;Mark Christopher Lawrence|USA|
+Incident at Loch Ness|2004|3.4|Comedy|Zak Penn|Werner Herzog;Zak Penn;Gabriel Beristain|USA|
+Hard Core Logo|1996|3.6|Comedy, Drama|Bruce McDonald|Hugh Dillon;Callum Keith Rennie;John Pyper-Ferguson|Canada|
+Bob Roberts|1992|3.6|Comedy|Tim Robbins|Tim Robbins;Giancarlo Esposito;Alan Rickman|USA|
+Real Life|1979|3.6|Comedy|Albert Brooks|Albert Brooks;Charles Grodin;Frances Lee McCain|USA|
+Exit Through the Gift Shop|2010|3.9|Documentary|Banksy|Thierry Guetta;Banksy;Space Invader|UK|
+Cloverfield|2008|3.2|Sci-Fi, Horror|Matt Reeves|Lizzy Caplan;Jessica Lucas;T.J. Miller|USA|`],
+["paris","Paris","Movies set in Paris",`
+Amélie|2001|4.0|Comedy, Romance|Jean-Pierre Jeunet|Audrey Tautou;Mathieu Kassovitz;Rufus|France|le fabuleux destin d amelie poulain
+La Haine|1995|4.2|Drama, Crime|Mathieu Kassovitz|Vincent Cassel;Hubert Koundé;Saïd Taghmaoui|France|hate
+Before Sunset|2004|4.2|Romance, Drama|Richard Linklater|Ethan Hawke;Julie Delpy;Vernon Dobtcheff|USA|
+Midnight in Paris|2011|3.6|Comedy, Fantasy|Woody Allen|Owen Wilson;Rachel McAdams;Marion Cotillard|USA, Spain|
+Cléo from 5 to 7|1962|4.1|Drama|Agnès Varda|Corinne Marchand;Antoine Bourseiller;Dominique Davray|France|cleo de 5 a 7;cleo from five to seven
+Holy Motors|2012|3.9|Drama, Fantasy|Leos Carax|Denis Lavant;Édith Scob;Eva Mendes|France|
+The Red Balloon|1956|3.9|Family, Fantasy|Albert Lamorisse|Pascal Lamorisse;Sabine Lamorisse;Georges Sellier|France|le ballon rouge
+Charade|1963|3.9|Mystery, Romance|Stanley Donen|Cary Grant;Audrey Hepburn;Walter Matthau|USA|
+Funny Face|1957|3.6|Musical, Romance|Stanley Donen|Audrey Hepburn;Fred Astaire;Kay Thompson|USA|
+Last Tango in Paris|1972|3.4|Drama, Romance|Bernardo Bertolucci|Marlon Brando;Maria Schneider;Maria Michi|Italy, France|
+The Intouchables|2011|3.9|Comedy, Drama|Olivier Nakache & Éric Toledano|François Cluzet;Omar Sy;Anne Le Ny|France|intouchables
+Le Samouraï|1967|4.1|Crime, Thriller|Jean-Pierre Melville|Alain Delon;François Périer;Nathalie Delon|France|the samurai
+Playtime|1967|4.2|Comedy|Jacques Tati|Jacques Tati;Barbara Dennek;Rita Maiden|France|play time
+Taken|2008|3.2|Action, Thriller|Pierre Morel|Liam Neeson;Maggie Grace;Famke Janssen|France|
+Ronin|1998|3.6|Action, Thriller|John Frankenheimer|Robert De Niro;Jean Reno;Natascha McElhone|USA, UK|
+Frantic|1988|3.5|Thriller, Mystery|Roman Polanski|Harrison Ford;Emmanuelle Seigner;Betty Buckley|USA, France|
+Les Amants du Pont-Neuf|1991|3.9|Romance, Drama|Leos Carax|Juliette Binoche;Denis Lavant;Klaus-Michael Grüber|France|the lovers on the bridge;lovers on the bridge
+Paris Belongs to Us|1961|3.6|Drama, Mystery|Jacques Rivette|Betty Schneider;Giani Esposito;Françoise Prévost|France|paris nous appartient
+Bande à part|1964|3.9|Crime, Drama|Jean-Luc Godard|Anna Karina;Sami Frey;Claude Brasseur|France|band of outsiders
+Zazie dans le Métro|1960|3.8|Comedy|Louis Malle|Catherine Demongeot;Philippe Noiret;Hubert Deschamps|France|zazie in the metro;zazie`],
+["animation","Animation","Animated films beyond Disney and Pixar",`
+Spirited Away|2001|4.5|Animation, Fantasy|Hayao Miyazaki|Rumi Hiiragi;Miyu Irino;Mari Natsuki|Japan|sen to chihiro no kamikakushi
+My Neighbor Totoro|1988|4.3|Animation, Family|Hayao Miyazaki|Noriko Hidaka;Chika Sakamoto;Shigesato Itoi|Japan|totoro;tonari no totoro
+Princess Mononoke|1997|4.4|Animation, Fantasy|Hayao Miyazaki|Yōji Matsuda;Yuriko Ishida;Yūko Tanaka|Japan|mononoke hime
+Grave of the Fireflies|1988|4.4|Animation, War|Isao Takahata|Tsutomu Tatsumi;Ayano Shiraishi;Akemi Yamaguchi|Japan|hotaru no haka
+Spider-Man: Into the Spider-Verse|2018|4.5|Animation, Action|Bob Persichetti, Peter Ramsey & Rodney Rothman|Shameik Moore;Jake Johnson;Hailee Steinfeld|USA|into the spider verse;spider verse;spiderverse
+Fantastic Mr. Fox|2009|4.0|Animation, Comedy|Wes Anderson|George Clooney;Meryl Streep;Jason Schwartzman|USA, UK|fantastic mr fox
+The Iron Giant|1999|4.0|Animation, Sci-Fi|Brad Bird|Jennifer Aniston;Harry Connick Jr.;Vin Diesel|USA|
+Persepolis|2007|4.0|Animation, Drama|Marjane Satrapi & Vincent Paronnaud|Chiara Mastroianni;Catherine Deneuve;Danielle Darrieux|France|
+Paprika|2006|4.0|Animation, Sci-Fi|Satoshi Kon|Megumi Hayashibara;Tōru Emori;Katsunosuke Hori|Japan|
+Coraline|2009|3.9|Animation, Fantasy|Henry Selick|Dakota Fanning;Teri Hatcher;Jennifer Saunders|USA|
+Wallace & Gromit: The Curse of the Were-Rabbit|2005|3.7|Animation, Comedy|Nick Park & Steve Box|Peter Sallis;Helena Bonham Carter;Ralph Fiennes|UK|curse of the were rabbit;wallace and gromit;wallace gromit
+Chicken Run|2000|3.6|Animation, Comedy|Peter Lord & Nick Park|Mel Gibson;Julia Sawalha;Miranda Richardson|UK|
+Song of the Sea|2014|4.0|Animation, Fantasy|Tomm Moore|David Rawle;Brendan Gleeson;Lisa Hannigan|Ireland|
+Mary and Max|2009|4.1|Animation, Drama|Adam Elliot|Toni Collette;Philip Seymour Hoffman;Eric Bana|Australia|mary max
+Anomalisa|2015|3.6|Animation, Drama|Charlie Kaufman & Duke Johnson|David Thewlis;Jennifer Jason Leigh;Tom Noonan|USA|
+Isle of Dogs|2018|3.8|Animation, Comedy|Wes Anderson|Bryan Cranston;Koyu Rankin;Edward Norton|USA, Germany|
+Shrek|2001|3.7|Animation, Comedy|Andrew Adamson & Vicky Jenson|Mike Myers;Eddie Murphy;Cameron Diaz|USA|
+The Triplets of Belleville|2003|3.9|Animation, Comedy|Sylvain Chomet|Michèle Caucheteux;Jean-Claude Donda;Michel Robin|France|les triplettes de belleville
+Ghost in the Shell|1995|4.0|Animation, Sci-Fi|Mamoru Oshii|Atsuko Tanaka;Akio Ōtsuka;Iemasa Kayumi|Japan|kokaku kidotai
+The Wild Robot|2024|4.1|Animation, Family|Chris Sanders|Lupita Nyong'o;Pedro Pascal;Kit Connor|USA|`],
+["la-noir","L.A. noir","Los Angeles noir, old and new",`
+Chinatown|1974|4.2|Mystery, Film Noir|Roman Polanski|Jack Nicholson;Faye Dunaway;John Huston|USA|
+L.A. Confidential|1997|4.0|Crime, Mystery|Curtis Hanson|Kevin Spacey;Russell Crowe;Guy Pearce|USA|la confidential
+The Long Goodbye|1973|4.0|Crime, Mystery|Robert Altman|Elliott Gould;Nina van Pallandt;Sterling Hayden|USA|
+Drive|2011|3.9|Crime, Thriller|Nicolas Winding Refn|Ryan Gosling;Carey Mulligan;Bryan Cranston|USA|
+Blade Runner|1982|4.1|Sci-Fi, Film Noir|Ridley Scott|Harrison Ford;Rutger Hauer;Sean Young|USA|
+Inherent Vice|2014|3.6|Crime, Comedy|Paul Thomas Anderson|Joaquin Phoenix;Josh Brolin;Owen Wilson|USA|
+The Big Lebowski|1998|4.0|Comedy, Crime|Joel & Ethan Coen|Jeff Bridges;John Goodman;Julianne Moore|USA|big lebowski;lebowski
+Double Indemnity|1944|4.2|Film Noir, Crime|Billy Wilder|Fred MacMurray;Barbara Stanwyck;Edward G. Robinson|USA|
+The Big Sleep|1946|4.0|Film Noir, Mystery|Howard Hawks|Humphrey Bogart;Lauren Bacall;John Ridgely|USA|
+Kiss Me Deadly|1955|3.9|Film Noir, Thriller|Robert Aldrich|Ralph Meeker;Albert Dekker;Paul Stewart|USA|
+Jackie Brown|1997|3.9|Crime, Thriller|Quentin Tarantino|Pam Grier;Samuel L. Jackson;Robert Forster|USA|
+Pulp Fiction|1994|4.3|Crime, Thriller|Quentin Tarantino|John Travolta;Samuel L. Jackson;Uma Thurman|USA|
+The Nice Guys|2016|3.8|Action, Comedy|Shane Black|Russell Crowe;Ryan Gosling;Angourie Rice|USA|
+Under the Silver Lake|2018|3.4|Mystery, Comedy|David Robert Mitchell|Andrew Garfield;Riley Keough;Topher Grace|USA|
+Lost Highway|1997|3.8|Mystery, Thriller|David Lynch|Bill Pullman;Patricia Arquette;Balthazar Getty|USA, France|
+To Live and Die in L.A.|1985|3.8|Crime, Thriller|William Friedkin|William Petersen;Willem Dafoe;John Pankow|USA|to live and die in la
+Devil in a Blue Dress|1995|3.5|Crime, Mystery|Carl Franklin|Denzel Washington;Tom Sizemore;Jennifer Beals|USA|
+Training Day|2001|3.6|Crime, Thriller|Antoine Fuqua|Denzel Washington;Ethan Hawke;Scott Glenn|USA|
+In a Lonely Place|1950|4.1|Film Noir, Drama|Nicholas Ray|Humphrey Bogart;Gloria Grahame;Frank Lovejoy|USA|
+Memento|2000|4.1|Mystery, Thriller|Christopher Nolan|Guy Pearce;Carrie-Anne Moss;Joe Pantoliano|USA|`],
+["sea","At sea","Movies set at sea",`
+Jaws|1975|4.1|Thriller, Horror|Steven Spielberg|Roy Scheider;Robert Shaw;Richard Dreyfuss|USA|
+Master and Commander: The Far Side of the World|2003|3.8|Adventure, War|Peter Weir|Russell Crowe;Paul Bettany;James D'Arcy|USA|master and commander
+Das Boot|1981|4.2|War, Drama|Wolfgang Petersen|Jürgen Prochnow;Herbert Grönemeyer;Klaus Wennemann|West Germany|the boat
+Titanic|1997|3.8|Romance, Drama|James Cameron|Leonardo DiCaprio;Kate Winslet;Billy Zane|USA|
+Life of Pi|2012|3.5|Adventure, Drama|Ang Lee|Suraj Sharma;Irrfan Khan;Rafe Spall|USA, Taiwan|
+Captain Phillips|2013|3.6|Thriller, Biography|Paul Greengrass|Tom Hanks;Barkhad Abdi;Barkhad Abdirahman|USA|
+The Poseidon Adventure|1972|3.4|Action, Adventure|Ronald Neame|Gene Hackman;Ernest Borgnine;Red Buttons|USA|poseidon adventure
+Triangle of Sadness|2022|3.6|Comedy, Drama|Ruben Östlund|Harris Dickinson;Charlbi Dean;Dolly de Leon|Sweden|
+L'Atalante|1934|4.0|Romance, Drama|Jean Vigo|Michel Simon;Dita Parlo;Jean Dasté|France|atalante
+The Hunt for Red October|1990|3.6|Thriller, Action|John McTiernan|Sean Connery;Alec Baldwin;Scott Glenn|USA|hunt for red october
+Pirates of the Caribbean: The Curse of the Black Pearl|2003|3.7|Adventure, Fantasy|Gore Verbinski|Johnny Depp;Geoffrey Rush;Orlando Bloom|USA|pirates of the caribbean;curse of the black pearl
+The Life Aquatic with Steve Zissou|2004|3.7|Comedy, Adventure|Wes Anderson|Bill Murray;Owen Wilson;Cate Blanchett|USA|life aquatic;the life aquatic
+Battleship Potemkin|1925|3.9|Drama, History|Sergei Eisenstein|Aleksandr Antonov;Vladimir Barsky;Grigori Aleksandrov|Soviet Union|potemkin
+The Perfect Storm|2000|3.0|Drama, Action|Wolfgang Petersen|George Clooney;Mark Wahlberg;Diane Lane|USA|perfect storm
+Mutiny on the Bounty|1935|3.7|Adventure, History|Frank Lloyd|Charles Laughton;Clark Gable;Franchot Tone|USA|
+Crimson Tide|1995|3.5|Thriller, War|Tony Scott|Denzel Washington;Gene Hackman;Matt Craven|USA|
+Knife in the Water|1962|3.7|Drama, Thriller|Roman Polanski|Leon Niemczyk;Jolanta Umecka;Zygmunt Malanowicz|Poland|noz w wodzie
+Dead Calm|1989|3.4|Thriller|Phillip Noyce|Sam Neill;Nicole Kidman;Billy Zane|Australia|
+Moby Dick|1956|3.4|Adventure|John Huston|Gregory Peck;Richard Basehart;Leo Genn|USA, UK|
+Waterworld|1995|2.8|Sci-Fi, Action|Kevin Reynolds|Kevin Costner;Dennis Hopper;Jeanne Tripplehorn|USA|`],
+["gambling","Gambling","Gambling, poker and pool hall movies",`
+The Hustler|1961|4.1|Drama, Sport|Robert Rossen|Paul Newman;Jackie Gleason;Piper Laurie|USA|
+Rounders|1998|3.6|Drama, Crime|John Dahl|Matt Damon;Edward Norton;John Turturro|USA|
+Casino|1995|4.1|Crime, Drama|Martin Scorsese|Robert De Niro;Sharon Stone;Joe Pesci|USA|
+Uncut Gems|2019|3.9|Thriller, Crime|Josh & Benny Safdie|Adam Sandler;Lakeith Stanfield;Julia Fox|USA|
+California Split|1974|3.8|Comedy, Drama|Robert Altman|George Segal;Elliott Gould;Ann Prentiss|USA|
+The Cincinnati Kid|1965|3.6|Drama|Norman Jewison|Steve McQueen;Ann-Margret;Edward G. Robinson|USA|cincinnati kid
+Molly's Game|2017|3.5|Drama, Biography|Aaron Sorkin|Jessica Chastain;Idris Elba;Kevin Costner|USA|mollys game
+Lock, Stock and Two Smoking Barrels|1998|3.8|Crime, Comedy|Guy Ritchie|Jason Flemyng;Dexter Fletcher;Nick Moran|UK|lock stock;lock stock and two smoking barrels
+Casino Royale|2006|3.9|Action, Thriller|Martin Campbell|Daniel Craig;Eva Green;Mads Mikkelsen|UK, USA|
+The Color of Money|1986|3.5|Drama, Sport|Martin Scorsese|Paul Newman;Tom Cruise;Mary Elizabeth Mastrantonio|USA|color of money
+Hard Eight|1996|3.7|Crime, Drama|Paul Thomas Anderson|Philip Baker Hall;John C. Reilly;Gwyneth Paltrow|USA|sydney
+21|2008|3.0|Drama, Crime|Robert Luketic|Jim Sturgess;Kevin Spacey;Kate Bosworth|USA|twenty one;twenty-one
+The Gambler|1974|3.6|Drama, Crime|Karel Reisz|James Caan;Paul Sorvino;Lauren Hutton|USA|
+Owning Mahowny|2003|3.5|Drama, Crime|Richard Kwietniowski|Philip Seymour Hoffman;Minnie Driver;Maury Chaykin|Canada|
+The Card Counter|2021|3.4|Crime, Drama|Paul Schrader|Oscar Isaac;Tiffany Haddish;Tye Sheridan|USA|card counter
+Mississippi Grind|2015|3.5|Drama|Anna Boden & Ryan Fleck|Ben Mendelsohn;Ryan Reynolds;Sienna Miller|USA|
+Croupier|1998|3.5|Crime, Drama|Mike Hodges|Clive Owen;Kate Hardie;Alex Kingston|UK|
+Bob le Flambeur|1956|3.9|Crime|Jean-Pierre Melville|Roger Duchesne;Isabelle Corey;Daniel Cauchy|France|bob the gambler
+Maverick|1994|3.3|Western, Comedy|Richard Donner|Mel Gibson;Jodie Foster;James Garner|USA|
+Two for the Money|2005|2.8|Drama, Thriller|D.J. Caruso|Al Pacino;Matthew McConaughey;Rene Russo|USA|`],
+["haunted","Haunted houses","Horror where the house is the problem",`
+The Shining|1980|4.3|Horror|Stanley Kubrick|Jack Nicholson;Shelley Duvall;Danny Lloyd|UK, USA|
+The Haunting|1963|3.9|Horror|Robert Wise|Julie Harris;Claire Bloom;Richard Johnson|UK, USA|
+The Others|2001|3.8|Horror, Mystery|Alejandro Amenábar|Nicole Kidman;Fionnula Flanagan;Christopher Eccleston|Spain, USA|
+The Innocents|1961|4.0|Horror|Jack Clayton|Deborah Kerr;Peter Wyngarde;Megs Jenkins|UK|
+Poltergeist|1982|3.6|Horror|Tobe Hooper|JoBeth Williams;Craig T. Nelson;Beatrice Straight|USA|
+The Conjuring|2013|3.4|Horror|James Wan|Vera Farmiga;Patrick Wilson;Lili Taylor|USA|
+House|1977|3.8|Horror, Comedy|Nobuhiko Obayashi|Kimiko Ikegami;Miki Jinbo;Kumiko Ohba|Japan|hausu
+Insidious|2010|3.1|Horror|James Wan|Patrick Wilson;Rose Byrne;Barbara Hershey|USA|
+The Orphanage|2007|3.8|Horror, Drama|J.A. Bayona|Belén Rueda;Fernando Cayo;Roger Príncep|Spain|el orfanato
+The Changeling|1980|3.6|Horror|Peter Medak|George C. Scott;Trish Van Devere;Melvyn Douglas|Canada|
+The Amityville Horror|1979|2.9|Horror|Stuart Rosenberg|James Brolin;Margot Kidder;Rod Steiger|USA|amityville horror
+Crimson Peak|2015|3.3|Horror, Romance|Guillermo del Toro|Mia Wasikowska;Jessica Chastain;Tom Hiddleston|USA|
+The Legend of Hell House|1973|3.5|Horror|John Hough|Pamela Franklin;Roddy McDowall;Clive Revill|UK|legend of hell house
+Barbarian|2022|3.6|Horror|Zach Cregger|Georgina Campbell;Bill Skarsgård;Justin Long|USA|
+The Babadook|2014|3.4|Horror|Jennifer Kent|Essie Davis;Noah Wiseman;Hayley McElhinney|Australia|babadook
+Don't Breathe|2016|3.2|Horror, Thriller|Fede Álvarez|Jane Levy;Dylan Minnette;Daniel Zovatto|USA|dont breathe
+Relic|2020|3.2|Horror|Natalie Erika James|Emily Mortimer;Robyn Nevin;Bella Heathcote|Australia|
+Psycho|1960|4.3|Horror, Thriller|Alfred Hitchcock|Anthony Perkins;Vera Miles;John Gavin|USA|
+Rosemary's Baby|1968|4.1|Horror|Roman Polanski|Mia Farrow;John Cassavetes;Ruth Gordon|USA|rosemarys baby
+Hush|2016|3.3|Horror, Thriller|Mike Flanagan|Kate Siegel;John Gallagher Jr.;Michael Trucco|USA|`],
+["war","War","War movies",`
+Apocalypse Now|1979|4.3|War, Drama|Francis Ford Coppola|Martin Sheen;Marlon Brando;Robert Duvall|USA|
+Saving Private Ryan|1998|4.1|War, Drama|Steven Spielberg|Tom Hanks;Edward Burns;Tom Sizemore|USA|
+Full Metal Jacket|1987|4.0|War, Drama|Stanley Kubrick|Matthew Modine;Adam Baldwin;Vincent D'Onofrio|UK, USA|
+Come and See|1985|4.5|War, Drama|Elem Klimov|Aleksei Kravchenko;Olga Mironova;Liubomiras Laucevičius|Soviet Union|idi i smotri
+The Deer Hunter|1978|4.0|War, Drama|Michael Cimino|Robert De Niro;Christopher Walken;John Cazale|USA|deer hunter
+Platoon|1986|3.8|War, Drama|Oliver Stone|Tom Berenger;Willem Dafoe;Charlie Sheen|USA|
+Dunkirk|2017|3.9|War, Action|Christopher Nolan|Fionn Whitehead;Tom Glynn-Carney;Jack Lowden|UK, USA|
+1917|2019|4.0|War, Drama|Sam Mendes|George MacKay;Dean-Charles Chapman;Mark Strong|UK, USA|nineteen seventeen
+The Thin Red Line|1998|4.0|War, Drama|Terrence Malick|Sean Penn;Adrien Brody;Jim Caviezel|USA|thin red line
+All Quiet on the Western Front|1930|4.0|War, Drama|Lewis Milestone|Lew Ayres;Louis Wolheim;John Wray|USA|
+The Bridge on the River Kwai|1957|4.0|War, Drama|David Lean|William Holden;Alec Guinness;Jack Hawkins|UK, USA|bridge on the river kwai
+The Great Escape|1963|3.9|War, Adventure|John Sturges|Steve McQueen;James Garner;Richard Attenborough|USA|great escape
+Black Hawk Down|2001|3.5|War, Action|Ridley Scott|Josh Hartnett;Ewan McGregor;Tom Sizemore|USA|
+The Hurt Locker|2008|3.6|War, Thriller|Kathryn Bigelow|Jeremy Renner;Anthony Mackie;Brian Geraghty|USA|hurt locker
+Letters from Iwo Jima|2006|3.7|War, Drama|Clint Eastwood|Ken Watanabe;Kazunari Ninomiya;Tsuyoshi Ihara|USA|
+The Zone of Interest|2023|3.9|War, Drama|Jonathan Glazer|Christian Friedel;Sandra Hüller;Johann Karthaus|UK, Poland|zone of interest
+Grand Illusion|1937|4.1|War, Drama|Jean Renoir|Jean Gabin;Dita Parlo;Pierre Fresnay|France|la grande illusion
+The Battle of Algiers|1966|4.2|War, Drama|Gillo Pontecorvo|Brahim Hadjadj;Jean Martin;Yacef Saadi|Italy, Algeria|battle of algiers;la battaglia di algeri
+Hacksaw Ridge|2016|3.6|War, Drama|Mel Gibson|Andrew Garfield;Sam Worthington;Luke Bracey|Australia, USA|
+Downfall|2004|3.9|War, History|Oliver Hirschbiegel|Bruno Ganz;Alexandra Maria Lara;Corinna Harfouch|Germany|der untergang`],
+["romcom","Rom-coms","Romantic comedies",`
+When Harry Met Sally...|1989|4.0|Romance, Comedy|Rob Reiner|Billy Crystal;Meg Ryan;Carrie Fisher|USA|when harry met sally
+Annie Hall|1977|4.0|Comedy, Romance|Woody Allen|Woody Allen;Diane Keaton;Tony Roberts|USA|
+The Philadelphia Story|1940|4.0|Comedy, Romance|George Cukor|Cary Grant;Katharine Hepburn;James Stewart|USA|philadelphia story
+Bringing Up Baby|1938|4.0|Comedy, Romance|Howard Hawks|Katharine Hepburn;Cary Grant;Charles Ruggles|USA|
+Notting Hill|1999|3.6|Romance, Comedy|Roger Michell|Julia Roberts;Hugh Grant;Richard McCabe|UK|
+10 Things I Hate About You|1999|3.7|Comedy, Romance|Gil Junger|Heath Ledger;Julia Stiles;Joseph Gordon-Levitt|USA|ten things i hate about you
+You've Got Mail|1998|3.4|Romance, Comedy|Nora Ephron|Tom Hanks;Meg Ryan;Greg Kinnear|USA|youve got mail
+Sleepless in Seattle|1993|3.4|Romance, Comedy|Nora Ephron|Tom Hanks;Meg Ryan;Bill Pullman|USA|
+Moonstruck|1987|3.7|Romance, Comedy|Norman Jewison|Cher;Nicolas Cage;Vincent Gardenia|USA|
+Pretty Woman|1990|3.3|Romance, Comedy|Garry Marshall|Richard Gere;Julia Roberts;Ralph Bellamy|USA|
+Four Weddings and a Funeral|1994|3.6|Romance, Comedy|Mike Newell|Hugh Grant;Andie MacDowell;Kristin Scott Thomas|UK|four weddings
+Crazy Rich Asians|2018|3.4|Romance, Comedy|Jon M. Chu|Constance Wu;Henry Golding;Michelle Yeoh|USA|
+The Big Sick|2017|3.7|Romance, Comedy|Michael Showalter|Kumail Nanjiani;Zoe Kazan;Holly Hunter|USA|big sick
+Silver Linings Playbook|2012|3.4|Romance, Comedy|David O. Russell|Bradley Cooper;Jennifer Lawrence;Robert De Niro|USA|
+Bridget Jones's Diary|2001|3.4|Romance, Comedy|Sharon Maguire|Renée Zellweger;Colin Firth;Hugh Grant|UK|bridget jones;bridget joness diary;bridget jones diary
+How to Lose a Guy in 10 Days|2003|3.2|Romance, Comedy|Donald Petrie|Kate Hudson;Matthew McConaughey;Adam Goldberg|USA|how to lose a guy in ten days
+Crazy, Stupid, Love.|2011|3.5|Romance, Comedy|Glenn Ficarra & John Requa|Steve Carell;Ryan Gosling;Julianne Moore|USA|crazy stupid love
+Harold and Maude|1971|4.0|Comedy, Romance|Hal Ashby|Ruth Gordon;Bud Cort;Vivian Pickles|USA|harold & maude
+Chungking Express|1994|4.3|Romance, Comedy|Wong Kar-wai|Brigitte Lin;Tony Leung Chiu-wai;Faye Wong|Hong Kong|
+Say Anything...|1989|3.6|Romance, Comedy|Cameron Crowe|John Cusack;Ione Skye;John Mahoney|USA|say anything`],
+["dystopia","Dystopias","Sci-fi dystopias",`
+Brazil|1985|3.9|Sci-Fi, Comedy|Terry Gilliam|Jonathan Pryce;Robert De Niro;Katherine Helmond|UK|
+Children of Men|2006|4.1|Sci-Fi, Thriller|Alfonso Cuarón|Clive Owen;Julianne Moore;Michael Caine|UK, USA|
+A Clockwork Orange|1971|4.0|Sci-Fi, Crime|Stanley Kubrick|Malcolm McDowell;Patrick Magee;Michael Bates|UK, USA|clockwork orange
+Metropolis|1927|4.2|Sci-Fi, Drama|Fritz Lang|Brigitte Helm;Alfred Abel;Gustav Fröhlich|Germany|
+The Matrix|1999|4.2|Sci-Fi, Action|Lana & Lilly Wachowski|Keanu Reeves;Laurence Fishburne;Carrie-Anne Moss|USA|matrix
+RoboCop|1987|3.8|Sci-Fi, Action|Paul Verhoeven|Peter Weller;Nancy Allen;Dan O'Herlihy|USA|robo cop
+Gattaca|1997|3.8|Sci-Fi, Drama|Andrew Niccol|Ethan Hawke;Uma Thurman;Jude Law|USA|
+Minority Report|2002|3.7|Sci-Fi, Action|Steven Spielberg|Tom Cruise;Colin Farrell;Samantha Morton|USA|
+They Live|1988|3.6|Sci-Fi, Action|John Carpenter|Roddy Piper;Keith David;Meg Foster|USA|
+Alphaville|1965|3.7|Sci-Fi, Mystery|Jean-Luc Godard|Eddie Constantine;Anna Karina;Akim Tamiroff|France|
+Escape from New York|1981|3.6|Sci-Fi, Action|John Carpenter|Kurt Russell;Lee Van Cleef;Ernest Borgnine|USA|
+The Truman Show|1998|4.0|Comedy, Sci-Fi|Peter Weir|Jim Carrey;Laura Linney;Noah Emmerich|USA|truman show
+Soylent Green|1973|3.4|Sci-Fi, Mystery|Richard Fleischer|Charlton Heston;Leigh Taylor-Young;Chuck Connors|USA|
+The Hunger Games|2012|3.5|Sci-Fi, Action|Gary Ross|Jennifer Lawrence;Josh Hutcherson;Liam Hemsworth|USA|hunger games
+Dredd|2012|3.6|Sci-Fi, Action|Pete Travis|Karl Urban;Olivia Thirlby;Lena Headey|UK, South Africa|
+The Lobster|2015|3.7|Comedy, Sci-Fi|Yorgos Lanthimos|Colin Farrell;Rachel Weisz;Jessica Barden|Ireland, UK, Greece|lobster
+Never Let Me Go|2010|3.6|Sci-Fi, Drama|Mark Romanek|Carey Mulligan;Andrew Garfield;Keira Knightley|UK|
+V for Vendetta|2005|3.6|Sci-Fi, Action|James McTeigue|Natalie Portman;Hugo Weaving;Stephen Rea|UK, USA|
+Fahrenheit 451|1966|3.4|Sci-Fi, Drama|François Truffaut|Oskar Werner;Julie Christie;Cyril Cusack|UK|
+Starship Troopers|1997|3.6|Sci-Fi, Action|Paul Verhoeven|Casper Van Dien;Dina Meyer;Denise Richards|USA|`],
+];
+
+const GROUPS = [
+  ["Genres", ["heists", "westerns", "musicals", "war", "romcom", "dystopia", "haunted", "animation", "mockumentary", "courtroom", "sports"]],
+  ["Places", ["theater", "trains", "space", "tokyo", "paris", "la-noir", "sea", "one-room", "road"]],
+  ["Themes", ["one-night", "time", "debuts", "christmas", "coming-of-age", "making-movies", "cons", "journalism", "food", "gambling"]],
+];
+const LISTS = RAW.map(([id, short, title, txt]) => ({
+  id, short, title,
+  films: txt.trim().split("\n").map((line) => {
+    const [t, y, r, g, d, c, co, a] = line.split("|");
+    return { t, y: +y, r: +r, g, d, c: c.split(";"), co, a: a ? a.split(";") : [] };
+  }).sort((p, q) => q.r - p.r || p.y - q.y),
+}));
+const byId = Object.fromEntries(LISTS.map((l) => [l.id, l]));
+
+const HINTS = [["g", "Genre"], ["d", "Director"], ["c3", "Cast #3"], ["c2", "Cast #2"], ["c1", "Cast #1"], ["co", "Country"], ["y", "Year"], ["r", "Rating"]];
+const NEEDS = { c2: "c3", c1: "c2" };
+const hintVal = (f, k) => ({ g: f.g, d: f.d, c3: f.c[2], c2: f.c[1], c1: f.c[0], co: f.co, y: String(f.y), r: "≈ " + f.r.toFixed(1) + " / 5" })[k];
+
+const EPOCH = new Date(2026, 9, 31);
+const dayIndex = () => { const n = new Date(); return Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - EPOCH) / 864e5); };
+const todayId = () => { const order = GROUPS.flatMap((g) => g[1]); const i = ((dayIndex() * 7) % order.length + order.length) % order.length; return order[i]; };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/&/g, " and ")
+  .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim().replace(/^(the|a|an) /, "");
+function lev(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function matches(f, guess) {
+  const g = norm(guess); if (!g) return false;
+  return [f.t, ...f.a].some((name) => {
+    const n = norm(name); if (n === g) return true;
+    const tol = n.length <= 5 ? 0 : n.length <= 10 ? 1 : 2;
+    return Math.abs(n.length - g.length) <= tol && lev(n, g) <= tol;
+  });
+}
+
+const blank = () => ({ s: {}, h: {}, m: [] });
+function load(id) { try { const v = JSON.parse(localStorage.getItem("reel20:" + id)); return v ? { s: v.s || {}, h: v.h || {}, m: v.m || [] } : blank(); } catch (e) { return blank(); } }
+function save() { try { localStorage.setItem("reel20:" + cur, JSON.stringify(state)); } catch (e) {} }
+
+let cur = todayId(), state = load(cur), openIdx = null, armed = false, justFound = -1;
+const list = () => byId[cur];
+const pts = (i) => state.s[i] === "g" ? 10 - (state.h[i] || []).length : 0;
+const isDone = () => list().films.every((_, i) => state.s[i]);
+function cell(i) { const s = state.s[i]; return s === "g" ? ((state.h[i] || []).length ? "h" : "g") : s === "x" ? "x" : ""; }
+function totals() {
+  const L = list(); let found = 0, score = 0;
+  L.films.forEach((_, i) => { if (state.s[i] === "g") { found++; score += pts(i); } });
+  return { found, score };
+}
+
+function renderHead() {
+  const L = list(), { found, score } = totals();
+  $("kick").textContent = cur === todayId() ? `No. ${dayIndex() + 1} · Today's list` : "Practice list";
+  $("lt").textContent = L.title;
+  $("meter").innerHTML = L.films.map((_, i) => `<i class="${cell(i)}${i === justFound ? " pop" : ""}"></i>`).join("");
+  $("meter").setAttribute("aria-label", `${found} of 20 found`);
+  $("sFound").textContent = `${found} of 20 found`;
+  $("sScore").textContent = `${score} pts`;
+  $("sScore").classList.toggle("bump", justFound > -1);
+}
+function rowHTML(f, i) {
+  const st = state.s[i], used = state.h[i] || [], done = !!st, isOpen = openIdx === i;
+  const cls = "row" + (st === "g" ? " solved" : st === "x" ? " lost" : "") + (i === justFound ? " flash" : "");
+  const mid = done ? `<span class="ttl">${esc(f.t)}<em>${f.y}</em></span>`
+    : `<span class="blank" aria-label="Hidden film"></span>` + (used.length ? `<span class="peek">${used.map((k) => esc(hintVal(f, k))).join(" · ")}</span>` : "");
+  const badge = st === "g" ? `+${10 - used.length}` : st === "x" ? "0" : used.length ? `−${used.length}` : "";
+  let drawer = "";
+  if (isOpen) {
+    const chips = HINTS.map(([k, label]) => {
+      const on = used.includes(k) || done, locked = !on && NEEDS[k] && !used.includes(NEEDS[k]);
+      if (on) return `<div class="hint open"><small>${label}</small><b>${esc(hintVal(f, k))}</b></div>`;
+      if (locked) return `<button class="hint locked" type="button" disabled><small>${label}</small><b>Unlocks after ${HINTS.find((h) => h[0] === NEEDS[k])[1]}</b></button>`;
+      return `<button class="hint" type="button" data-i="${i}" data-k="${k}"><small>${label}</small><b>Reveal</b></button>`;
+    }).join("");
+    drawer = `<div class="drawer">${done ? "" : `<p class="dnote">Each hint costs 1 of this film's 10 points.</p>`}<div class="hints">${chips}</div>${done ? "" : `<button class="textbtn" type="button" data-give="${i}">Reveal the title (scores 0)</button>`}</div>`;
+  }
+  const chev = `<svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg>`;
+  return `<li class="${cls}" id="row${i}"><button class="slot" type="button" data-row="${i}" aria-expanded="${isOpen}" aria-label="Film ${i + 1}${done ? ", " + esc(f.t) : ""}">
+    <span class="rank">${String(i + 1).padStart(2, "0")}</span><span class="mid">${mid}</span><span class="badge">${badge}</span>${chev}</button>${drawer}</li>`;
+}
+function shareText() {
+  const L = list(), { found, score } = totals();
+  const em = { g: "🟩", h: "🟨", x: "⬛" };
+  const cells = L.films.map((_, i) => em[cell(i)] || "⬜");
+  const tag = cur === todayId() ? `No. ${dayIndex() + 1}` : "practice";
+  return `Reel Twenty ${tag}\n${L.title}\n${found}/20 · ${score} pts\n${cells.slice(0, 10).join("")}\n${cells.slice(10).join("")}`;
+}
+function renderResult() {
+  const R = $("result");
+  if (!isDone()) { R.hidden = true; $("bar").hidden = false; return; }
+  $("bar").hidden = true; R.hidden = false;
+  const { found, score } = totals();
+  const grade = found === 20 && score >= 180 ? "Projectionist" : found === 20 ? "Full house" : found >= 15 ? "Front row" : found >= 8 ? "Matinee crowd" : "Walked out early";
+  const text = shareText(), lines = text.split("\n");
+  R.innerHTML = `<h3>${grade}</h3><p>${found} of 20 found · ${score} of 200 pts</p>
+    <div class="grid" aria-hidden="true">${esc(lines[3])}<br>${esc(lines[4])}</div>
+    <div class="acts"><button class="btn" id="copy" type="button">Copy result</button><button class="btn ghost" id="next" type="button">Next list</button></div>
+    <textarea id="shareTxt" rows="5" readonly hidden>${esc(text)}</textarea>`;
+  $("copy").onclick = () => {
+    const fb = () => { const t = $("shareTxt"); t.hidden = false; t.select(); $("copy").textContent = "Select and copy"; };
+    try { navigator.clipboard.writeText(text).then(() => { $("copy").textContent = "Copied"; }, fb); } catch (e) { fb(); }
+  };
+  $("next").onclick = () => { const next = LISTS.find((l) => l.id !== cur && !load(l.id).s[0] && !Object.keys(load(l.id).s).length) || LISTS[(LISTS.indexOf(list()) + 1) % LISTS.length]; switchTo(next.id); };
+}
+function renderTried() {
+  const t = $("tried");
+  if (!state.m.length) { t.hidden = true; return; }
+  t.hidden = false; t.innerHTML = "Tried: " + state.m.slice(-6).reverse().map((m) => `<s>${esc(m)}</s>`).join(" · ");
+}
+function render() {
+  renderHead();
+  $("board").innerHTML = list().films.map(rowHTML).join("");
+  renderResult(); renderTried();
+  justFound = -1;
+}
+function introFeedback() { feedback("Name any film on this list. Tap a row for hints.", "meh"); }
+function feedback(msg, kind) { const fb = $("fb"); fb.textContent = msg; fb.className = "fb " + kind; }
+
+let sheetTab = null;
+const groupOf = (id) => GROUPS.findIndex((g) => g[1].includes(id));
+function miniMeter(id) {
+  const st = load(id);
+  if (!Object.keys(st.s).length && !Object.keys(st.h).length) return `<span class="badge">New</span>`;
+  return `<span class="mm" aria-hidden="true">${Array.from({ length: 20 }, (_, i) => { const v = st.s[i]; return `<i class="${v === "g" ? ((st.h[i] || []).length ? "h" : "g") : v === "x" ? "x" : ""}"></i>`; }).join("")}</span>`;
+}
+function renderSheet() {
+  if (sheetTab === null) sheetTab = Math.max(0, groupOf(cur));
+  const t = todayId(), tn = Object.values(load(t).s).filter((v) => v === "g").length;
+  const found = (id) => Object.values(load(id).s).filter((v) => v === "g").length;
+  $("groups").innerHTML = `<div style="display:flex;flex-direction:column;gap:16px">
+    <button class="todaycard" type="button" data-list="${t}"><span><small>Today · No. ${dayIndex() + 1}</small><b>${esc(byId[t].short)}</b></span><span class="badge">${tn}/20</span></button>
+    <div class="seg" role="tablist" aria-label="List categories">${GROUPS.map(([name, ids], gi) => `<button type="button" role="tab" data-tab="${gi}" aria-selected="${gi === sheetTab}">${name}<span>${ids.length}</span></button>`).join("")}</div>
+    <ul class="opts" role="tabpanel">${GROUPS[sheetTab][1].map((id) => `<li><button class="opt" type="button" data-list="${id}" aria-current="${id === cur}" aria-label="${esc(byId[id].short)}, ${found(id)} of 20 found">${esc(byId[id].short)}${miniMeter(id)}</button></li>`).join("")}</ul></div>`;
+}
+function openSheet() { sheetTab = null; renderSheet(); $("scrim").hidden = false; $("closeLists").focus(); }
+function closeSheet() { $("scrim").hidden = true; $("openLists").focus(); }
+function switchTo(id) {
+  cur = id; state = load(cur); openIdx = null; disarm(); closeSheet(); render();
+  introFeedback(); window.scrollTo({ top: 0 });
+}
+
+$("openLists").onclick = openSheet;
+$("closeLists").onclick = closeSheet;
+$("scrim").addEventListener("click", (e) => {
+  if (e.target === $("scrim")) return closeSheet();
+  const tab = e.target.closest("[data-tab]"); if (tab) { sheetTab = +tab.dataset.tab; renderSheet(); return; }
+  const o = e.target.closest("[data-list]"); if (o) switchTo(o.dataset.list);
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("scrim").hidden) closeSheet(); });
+
+$("board").addEventListener("click", (e) => {
+  const hint = e.target.closest(".hint[data-k]");
+  if (hint) { const i = +hint.dataset.i; (state.h[i] = state.h[i] || []).push(hint.dataset.k); save(); render(); return; }
+  const give = e.target.closest("[data-give]");
+  if (give) { const i = +give.dataset.give; state.s[i] = "x"; openIdx = null; save(); render(); feedback(`#${i + 1} was ${list().films[i].t}.`, "meh"); return; }
+  const slot = e.target.closest(".slot");
+  if (slot) { const i = +slot.dataset.row; openIdx = openIdx === i ? null : i; render(); }
+});
+
+$("gform").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const inp = $("gin"), val = inp.value.trim(); if (!val) return;
+  const L = list(), i = L.films.findIndex((f) => matches(f, val));
+  const miss = (msg) => { feedback(msg, "no"); inp.classList.remove("shake"); void inp.offsetWidth; inp.classList.add("shake"); inp.select(); };
+  if (i === -1) {
+    const key = norm(val);
+    if (state.m.some((m) => norm(m) === key)) { miss(`Already tried "${val}".`); return; }
+    state.m.push(val); save(); renderTried();
+    const elsewhere = LISTS.find((l) => l.id !== cur && l.films.some((f) => matches(f, val)));
+    miss(elsewhere ? `Not here. It's on ${elsewhere.short}.` : `"${val}" isn't on this list.`);
+    return;
+  }
+  inp.value = "";
+  if (state.s[i]) { feedback(`${L.films[i].t} is already up at #${i + 1}.`, "meh"); return; }
+  state.s[i] = "g"; justFound = i; if (openIdx === i) openIdx = null; save(); render();
+  const { found } = totals();
+  if (isDone()) { feedback("", "meh"); try { navigator.vibrate && navigator.vibrate([20, 60, 20]); } catch (err) {} window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); return; }
+  feedback(`#${i + 1} ${L.films[i].t}, +${pts(i)}. ${20 - found} to go.`, "ok");
+  try { navigator.vibrate && navigator.vibrate(18); } catch (err) {}
+  $("row" + i).scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+});
+
+function disarm() { armed = false; $("giveAll").classList.remove("armed"); $("giveAll").textContent = "Reveal the rest"; }
+$("giveAll").addEventListener("click", () => {
+  if (!armed) { armed = true; $("giveAll").classList.add("armed"); $("giveAll").textContent = "Tap again to reveal all"; return; }
+  list().films.forEach((_, i) => { if (!state.s[i]) state.s[i] = "x"; });
+  disarm(); openIdx = null; save(); render(); window.scrollTo({ top: 0 });
+});
+$("reset").addEventListener("click", () => { state = blank(); openIdx = null; disarm(); save(); render(); feedback("Fresh board.", "meh"); });
+
+render(); introFeedback();
+</script>
+
+</body></html>
